@@ -1,0 +1,16 @@
+# 로컬 개발용 PostgreSQL. `docker compose up -d` 후 api/.env 의 DATABASE_URL 을 아래 값으로.
+# postgresql://localstride:localstride@localhost:5432/localstride
+services:
+  db:
+    image: postgres:16
+    container_name: localstride-db
+    environment:
+      POSTGRES_USER: localstride
+      POSTGRES_PASSWORD: localstride
+      POSTGRES_DB: localstride
+    ports:
+      - "5432:5432"
+    volumes:
+      - localstride-pg:/var/lib/postgresql/data
+volumes:
+  localstride-pg:

@@ -1,0 +1,1 @@
+{ "name": "LOCAL STRIDE", "short_name": "LocalStride", "start_url": "/", "display": "standalone", "background_color": "#0B1F55", "theme_color": "#1B5BDF", "icons": [{ "src": "/logo-blue.png", "sizes": "560x213", "type": "image/png" }] }
