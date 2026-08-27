@@ -547,6 +547,84 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
   .community-jump, .community-card, .race-card { transition: none; }
 }
 
+/* 미션 · 쿠폰 · 지역화폐 리워드 */
+.mission-page { padding-right: 16px; padding-left: 16px; }
+.mission-hero { position: relative; isolation: isolate; overflow: hidden; padding: 23px 20px 18px; border-radius: 24px; background: linear-gradient(142deg, #071945, #123E91 62%, #2369E8); color: #fff; box-shadow: 0 18px 38px rgba(10,29,82,.2); }
+.mission-hero::after { content: "₩"; position: absolute; z-index: -1; right: 17px; top: 3px; color: rgba(255,255,255,.07); font-family: var(--mono); font-size: 116px; font-weight: 900; transform: rotate(8deg); }
+.mission-hero > span { color: #FFD970; font-size: 8.5px; font-weight: 900; letter-spacing: .14em; }
+.mission-hero h2 { margin: 12px 0 7px; font-size: 24px; line-height: 1.25; letter-spacing: -.045em; }
+.mission-hero h2 em { color: #FFD970; font-style: normal; }
+.mission-hero > p { max-width: 330px; margin: 0; color: #D9E5FF; font-size: 11.5px; line-height: 1.6; word-break: keep-all; }
+.mission-hero > div { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 17px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.15); }
+.mission-hero > div span { color: #B8CDF8; font-size: 9px; }
+.mission-hero > div b { display: block; margin-bottom: 2px; color: #fff; font-size: 18px; }
+.mission-message { margin: 11px 0 0; padding: 11px 13px; border: 1px solid #C9D9FA; border-radius: 12px; background: #EEF4FF; color: var(--blue-deep); font-size: 11.5px; font-weight: 700; line-height: 1.5; }
+.mission-section-title { align-items: flex-end; margin: 20px 2px 9px; }
+.mission-section-title > div { display: grid; gap: 4px; }
+.mission-section-title > div > span, .mission-challenge .row span { color: var(--blue); font-size: 8px; font-weight: 900; letter-spacing: .12em; }
+.mission-section-title h2 { font-size: 17px; }
+.mission-section-title small { color: var(--muted); font-size: 10px; }
+.mission-list { display: grid; gap: 11px; }
+.mission-rich { padding: 15px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); }
+.mission-rich.local-pay { border-color: #E7D08A; background: linear-gradient(145deg, #FFFCF3, #fff 58%); box-shadow: 0 11px 26px rgba(164,115,11,.09); }
+.mission-rich.done { border-color: #B7DEC8; }
+.mission-rich-top { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 11px; align-items: start; }
+.mission-rich-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: linear-gradient(145deg, #E9F0FF, #D9E6FF); color: var(--blue); font-family: var(--mono); font-size: 15px; font-weight: 900; box-shadow: inset 0 0 0 1px rgba(27,91,223,.06); }
+.mission-rich.local-pay .mission-rich-icon { background: linear-gradient(145deg, #FFF3C8, #F3D982); color: #7D5904; }
+.mission-rich.done .mission-rich-icon { background: #DFF5E7; color: var(--green); }
+.mission-rich-tags { display: flex; flex-wrap: wrap; gap: 5px; min-height: 18px; }
+.mission-rich h3 { margin: 5px 0 3px; font-size: 15px; letter-spacing: -.02em; }
+.mission-rich-top p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.5; }
+.mission-progress-line { display: flex; justify-content: space-between; gap: 8px; margin-top: 13px; color: var(--muted); font-size: 9.5px; }
+.mission-progress-line b { color: var(--blue); font-family: var(--mono); }
+.mission-progress { height: 6px; overflow: hidden; margin-top: 6px; border-radius: 6px; background: #E9EDF5; }
+.mission-progress i { display: block; min-width: 3px; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), #62A0FF); transition: width .45s ease; }
+.mission-rich.local-pay .mission-progress i { background: linear-gradient(90deg, #D29B14, #F3C650); }
+.mission-rich.done .mission-progress i { background: var(--green); }
+.mission-reward { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; gap: 9px; align-items: center; margin-top: 12px; padding: 10px; border: 1px solid #E7EBF3; border-radius: 13px; background: #F7F9FC; }
+.mission-rich.local-pay .mission-reward { border-color: #EEDB9B; background: #FFF8E5; }
+.mission-reward-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: var(--navy); color: var(--gold); font-family: var(--mono); font-size: 12px; font-weight: 900; }
+.mission-reward > div { min-width: 0; }
+.mission-reward small, .mission-reward strong, .mission-reward p { display: block; }
+.mission-reward small { color: #929BB0; font-size: 8px; font-weight: 800; }
+.mission-reward strong { overflow: hidden; margin-top: 2px; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.mission-reward p { display: -webkit-box; overflow: hidden; margin: 3px 0 0; color: var(--muted); font-size: 8.5px; line-height: 1.4; word-break: keep-all; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.mission-reward .btn { padding: 8px 9px; border-radius: 9px; font-size: 10px; }
+.mission-locked, .mission-claimed { flex: 0 0 auto; color: var(--muted); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.mission-claimed { padding: 5px 7px; border-radius: 999px; background: #DFF5E7; color: var(--green); }
+.medal-reward .mission-reward-mark { background: #FFF0B8; color: #8A6410; }
+.mission-disclaimer { margin: 12px 1px 0; padding: 11px 12px; border: 1px solid #E8D9A8; border-radius: 12px; background: #FFFBEE; color: #79652A; font-size: 9.5px; line-height: 1.55; word-break: keep-all; }
+.mission-challenge { margin-top: 15px; padding: 16px; }
+.mission-challenge h4 { margin: 4px 0 0; font-size: 14px; }
+.mission-challenge .row > b { color: var(--blue); font-family: var(--mono); font-size: 11px; }
+
+.reward-wallet { display: grid; gap: 9px; }
+.wallet-item { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 11px; align-items: center; padding: 13px; border: 1px solid var(--line); border-radius: 17px; background: #fff; box-shadow: 0 7px 18px rgba(20,33,61,.04); }
+.wallet-item.local-currency { border-color: #E7D08A; background: linear-gradient(140deg, #FFFCF3, #fff); }
+.wallet-item.used { opacity: .55; }
+.wallet-mark { width: 42px; height: 48px; display: grid; place-items: center; border-radius: 13px; background: var(--navy); color: var(--gold); font-family: var(--mono); font-size: 15px; font-weight: 900; }
+.wallet-item.local-currency .wallet-mark { background: linear-gradient(145deg, #E4B23A, #AC7410); color: #fff; }
+.wallet-item > div { min-width: 0; }
+.wallet-tags { display: flex; gap: 4px; }
+.wallet-item h4 { overflow: hidden; margin: 6px 0 2px; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.wallet-item p, .wallet-item small { display: block; overflow: hidden; margin: 0; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.wallet-item small { margin-top: 4px; color: #A2AABD; font-family: var(--mono); font-size: 7.5px; }
+.wallet-item .go { padding: 8px 10px; border: 1px solid #CCD9F4; border-radius: 10px; background: #fff; color: var(--blue); font-size: 10px; font-weight: 800; }
+.wallet-status { color: var(--muted); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.wallet-status.pending { padding: 5px 7px; border-radius: 999px; background: var(--gold-soft); color: #8A6410; }
+.wallet-notice { margin-bottom: 4px; }
+
+@media (max-width: 380px) {
+  .mission-reward { grid-template-columns: 32px minmax(0,1fr); }
+  .mission-reward > :last-child { grid-column: 2; justify-self: start; }
+  .wallet-item { grid-template-columns: 38px minmax(0,1fr); }
+  .wallet-mark { width: 38px; }
+  .wallet-item > :last-child { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-progress i { transition: none; }
+}
+
 /* 목록 공통 */
 .list-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .list-item .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-weight: 900; font-size: 14px; }

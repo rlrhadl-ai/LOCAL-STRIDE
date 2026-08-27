@@ -117,15 +117,32 @@ async function main() {
     if (!exists) await prisma.coupon.create({ data: { merchantId: merchant.id, title: m.coupon.title, discountKrw: m.coupon.discountKrw, courseSlug: m.coupon.courseSlug, validUntil: new Date(Date.now() + 90 * 86400000) } });
   }
 
+  // ---------- 미션 완료 리워드(실제 지역화폐·제휴 계약 전 시범 발급) ----------
+  const rewardCouponDefs = [
+    { merchantName: '러너스테이', category: '미션 리워드', addr: '대구 수성구 파동', title: '러너스테이 리커버리 3,000원 시범 쿠폰', amountKrw: 3000 },
+    { merchantName: '수성못 카페거리 제휴 후보 카페', category: '카페', addr: '대구 수성구 용학로', title: '모닝 리커버리 커피 2,000원 시범 쿠폰', amountKrw: 2000 },
+    { merchantName: '들안길 먹거리타운 제휴 후보 매장', category: '음식점', addr: '대구 수성구 들안로 일대', title: '들안길 로컬 식사 5,000원 시범 쿠폰', amountKrw: 5000 },
+    { merchantName: '대구로페이 연계 예정', category: '지역화폐 리워드', addr: '대구광역시', title: '대구로페이 3,000원 지급 예정', amountKrw: 3000 },
+  ];
+  const rewardValidUntil = new Date(Date.now() + 90 * 86400000);
+  for (const reward of rewardCouponDefs) {
+    let merchant = await prisma.merchant.findFirst({ where: { name: reward.merchantName } });
+    if (!merchant) merchant = await prisma.merchant.create({ data: { name: reward.merchantName, category: reward.category, lat: 0, lng: 0, addr: reward.addr } });
+    const existing = await prisma.coupon.findFirst({ where: { merchantId: merchant.id, title: reward.title } });
+    if (!existing) await prisma.coupon.create({ data: { merchantId: merchant.id, title: reward.title, discountKrw: reward.amountKrw, validUntil: rewardValidUntil } });
+    else await prisma.coupon.update({ where: { id: existing.id }, data: { discountKrw: reward.amountKrw, validUntil: rewardValidUntil } });
+  }
+
   // ---------- 미션 (이번 달) ----------
   const now = new Date(); const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const missionDefs = [
-    { code: 'MONTH-30K', type: 'PERIOD_DISTANCE', title: '이달의 30km', description: '이번 달 누적 30km 달리기', rule: { targetM: 30000 }, rewardText: '월간 배지' },
-    { code: 'MIRACLE-3', type: 'MIRACLE_RUN', title: '미라클 런 3회', description: '오전 5~8시 출발 러닝 3회', rule: { startHourFrom: 5, startHourTo: 8, count: 3 }, rewardText: '미라클 배지' },
+    { code: 'MONTH-30K', type: 'PERIOD_DISTANCE', title: '이달의 30km', description: '이번 달 누적 30km 달리기', rule: { targetM: 30000, reward: { type: 'COUPON', title: '러너스테이 리커버리 3,000원 쿠폰', amountKrw: 3000, couponTitle: '러너스테이 리커버리 3,000원 시범 쿠폰', merchantName: '러너스테이', status: 'DEMO', notice: '제휴 확정 전 시범 쿠폰입니다.' } }, rewardText: '러너스테이 3,000원 쿠폰' },
+    { code: 'MIRACLE-3', type: 'MIRACLE_RUN', title: '미라클 런 3회', description: '오전 5~8시 출발 러닝 3회', rule: { startHourFrom: 5, startHourTo: 8, count: 3, reward: { type: 'COUPON', title: '모닝 리커버리 커피 2,000원 쿠폰', amountKrw: 2000, couponTitle: '모닝 리커버리 커피 2,000원 시범 쿠폰', merchantName: '수성못 카페거리 제휴 후보 카페', status: 'DEMO', notice: '제휴 확정 전 시범 쿠폰입니다.' } }, rewardText: '모닝 커피 2,000원 쿠폰' },
     { code: 'BLUE-CHECKIN', type: 'CHECKIN', title: '수성못 블루런 체크포인트 올클리어', description: '블루런 5K 체크포인트 6곳 모두 체크인', rule: { courseSlug: 'suseong-blue-5k', count: 1 }, rewardText: '수성 블루러너 메달' },
-    { code: 'LOCAL-FOOD-1', type: 'LOCAL_FOOD', title: '로컬 맛집 인증', description: '완주 후 가맹 후보 매장에서 사진+위치 인증', rule: { count: 1 }, rewardText: '추가 쿠폰' },
+    { code: 'LOCAL-FOOD-1', type: 'LOCAL_FOOD', title: '로컬 맛집 인증', description: '완주 후 가맹 후보 매장에서 사진+위치 인증', rule: { count: 1, reward: { type: 'COUPON', title: '들안길 로컬 식사 5,000원 쿠폰', amountKrw: 5000, couponTitle: '들안길 로컬 식사 5,000원 시범 쿠폰', merchantName: '들안길 먹거리타운 제휴 후보 매장', status: 'DEMO', notice: '제휴 확정 전 시범 쿠폰입니다.' } }, rewardText: '들안길 5,000원 쿠폰' },
+    { code: 'LOCAL-PAY-CHECKIN', type: 'LOCAL_FOOD', title: '대구로페이 동네 체크인', description: 'GPS로 로컬 제휴 후보 매장 방문 1회 인증', rule: { count: 1, reward: { type: 'LOCAL_CURRENCY', title: '대구로페이 3,000원', amountKrw: 3000, couponTitle: '대구로페이 3,000원 지급 예정', merchantName: '대구로페이 연계 예정', status: 'DEMO', notice: '지역화폐 운영기관 연계 전 지급 예정 리워드입니다. 실제 충전은 제휴 확정 후 제공됩니다.' } }, rewardText: '대구로페이 3,000원 지급 예정' },
   ] as const;
-  for (const m of missionDefs) await prisma.mission.upsert({ where: { code: m.code }, create: { code: m.code, type: m.type, title: m.title, description: m.description, periodStart: start, periodEnd: end, rule: m.rule, rewardText: m.rewardText }, update: { periodStart: start, periodEnd: end, rule: m.rule } });
+  for (const m of missionDefs) await prisma.mission.upsert({ where: { code: m.code }, create: { code: m.code, type: m.type, title: m.title, description: m.description, periodStart: start, periodEnd: end, rule: m.rule, rewardText: m.rewardText }, update: { title: m.title, description: m.description, periodStart: start, periodEnd: end, rule: m.rule, rewardText: m.rewardText } });
 
   // ---------- 운영 계정 · 대회 · 크루 · 메이트 ----------
   const ops = await prisma.user.upsert({

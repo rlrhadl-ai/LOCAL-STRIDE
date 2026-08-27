@@ -14,7 +14,7 @@ interface Me {
   user: ProfileUser;
   stats: { totalKm: number; runs: number; courses: number; medals: number; level: number; levelName: string };
   medals: { medal: { name: string } }[];
-  coupons: { id: string; code: string; usedAt: string | null; coupon: { title: string; validUntil: string; merchant: { name: string } } }[];
+  coupons: { id: string; code: string; usedAt: string | null; coupon: { title: string; discountKrw: number; validUntil: string; merchant: { name: string; category: string } } }[];
   challenges: { challenge: { name: string; targetCount: number }; completedSlugs: string[] }[];
   crews: { id: string; name: string }[];
 }
@@ -72,6 +72,7 @@ export default function MePage() {
 
   if (!me || !edit) return <main className="page"><AppHeader title="마이" /><div className="empty">{msg || '프로필을 불러오는 중…'}</div></main>;
   const user = me.user;
+  const availableRewards = me.coupons.filter((coupon) => !coupon.usedAt);
   return <main className="page">
     <AppHeader title="마이 페이지" right={user.isAuthenticated ? <span className="account-status">로그인됨</span> : <Link className="header-login" href="/login">로그인</Link>} />
 
@@ -100,7 +101,11 @@ export default function MePage() {
 
     <div className="section-title"><h2>내 활동</h2></div>
     <div className="menu"><Link href="/missions">미션 · 메달 <span>{me.challenges[0] ? `${me.challenges[0].challenge.name} ${me.challenges[0].completedSlugs.length}/${me.challenges[0].challenge.targetCount}` : `메달 ${me.stats.medals}`}</span></Link><Link href="/rankings">랭킹 <span>{me.stats.runs}회 완주</span></Link><Link href="/courses?mine=1">내 코스 <span>만들기 ›</span></Link><Link href="/crews">내 크루 <span>{me.crews.map((crew) => crew.name).join(', ') || '없음'}</span></Link></div>
-    <div className="section-title"><h2>내 쿠폰</h2><span>{me.coupons.filter((coupon) => !coupon.usedAt).length}장 사용 가능</span></div>
-    <div className="stack">{me.coupons.map((coupon) => <div key={coupon.id} className="list-item" style={{ opacity: coupon.usedAt ? .5 : 1 }}><span className="ic" style={{ background: 'var(--gold-soft)', color: '#8A6410' }}>₩</span><div><h4>{coupon.coupon.title}</h4><p>{coupon.coupon.merchant.name} · {coupon.code} · {new Date(coupon.coupon.validUntil).toLocaleDateString('ko-KR')}까지</p></div>{coupon.usedAt ? <span className="tag">사용됨</span> : <button className="go" type="button" onClick={() => redeemCoupon(coupon.code)}>사용</button>}</div>)}{me.coupons.length === 0 && <div className="empty">코스를 완주하면 로컬 쿠폰이 지급돼요.</div>}</div>
+    <div className="section-title"><h2>내 리워드 지갑</h2><span>{availableRewards.length}개 보유</span></div>
+    <div className="reward-wallet">{me.coupons.map((coupon) => {
+      const localCurrency = coupon.coupon.merchant.category === '지역화폐 리워드';
+      return <div key={coupon.id} className={'wallet-item ' + (localCurrency ? 'local-currency ' : '') + (coupon.usedAt ? 'used' : '')}><span className="wallet-mark">{localCurrency ? '₩' : 'C'}</span><div><div className="wallet-tags">{localCurrency && <span className="tag gold">지역화폐</span>}<span className="tag">{coupon.coupon.discountKrw.toLocaleString()}원</span></div><h4>{coupon.coupon.title}</h4><p>{coupon.coupon.merchant.name} · {new Date(coupon.coupon.validUntil).toLocaleDateString('ko-KR')}까지</p><small>{coupon.code}</small></div>{coupon.usedAt ? <span className="wallet-status">사용됨</span> : localCurrency ? <span className="wallet-status pending">지급 예정</span> : <button className="go" type="button" onClick={() => redeemCoupon(coupon.code)}>사용</button>}</div>;
+    })}{me.coupons.length === 0 && <div className="empty">미션이나 코스를 완주하면 로컬 리워드가 지급돼요.</div>}</div>
+    {me.coupons.some((coupon) => coupon.coupon.merchant.category === '지역화폐 리워드') && <p className="mission-disclaimer wallet-notice">지역화폐 ‘지급 예정’ 항목은 운영기관 연계 전 시범 리워드이며, 아직 실제 대구로페이 잔액은 아닙니다.</p>}
   </main>;
 }
