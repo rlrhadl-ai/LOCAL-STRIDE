@@ -93,7 +93,13 @@ model User {
   phoneVerified      Boolean             @default(false)
   nickname           String
   avatarColor        String              @default("#1B5BDF")
+  avatarUrl          String?
+  bio                String?
+  homeArea           String              @default("대구 수성구")
+  weeklyGoalKm       Int                 @default(20)
+  preferredPaceSec   Int?
   createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   runs               Run[]
   medals             UserMedal[]
   coupons            UserCoupon[]

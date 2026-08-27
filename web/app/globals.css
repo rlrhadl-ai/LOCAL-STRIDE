@@ -44,6 +44,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-
 .btn:hover { background: #2E6CF0; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn.light { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 .btn.gold { background: var(--gold); color: var(--navy); }
 .btn.sm { padding: 10px; font-size: 13px; border-radius: 12px; width: auto; }
 .btn.danger { background: var(--red); }
@@ -263,6 +264,23 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
 .profile .prow { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.16); text-align: center; }
 .profile .prow b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
 .profile .prow span { font-size: 10.5px; color: #C9D6F5; }
+.profile-rich { padding: 19px; box-shadow: 0 16px 36px rgba(10,29,82,.18); }
+.profile-rich .avatar { width: 54px; height: 54px; overflow: hidden; border: 2px solid rgba(255,255,255,.72); box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+.profile-rich .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-name-row { display: flex; align-items: center; gap: 7px; }.profile-name-row span { padding: 2px 6px; border-radius: 999px; background: var(--gold); color: var(--navy); font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.profile-bio { margin: 13px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.1); color: #E3EBFF; font-size: 12px; line-height: 1.5; }
+.header-login { padding: 7px 11px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 11.5px; font-weight: 800; }
+.account-status { padding: 6px 10px; border-radius: 999px; background: #E3F5EA; color: var(--green); font-size: 10.5px; font-weight: 800; }
+.account-callout { margin-top: 12px; padding: 17px; border-radius: 18px; background: linear-gradient(145deg, #FFF8E5, #FBF1D6); border: 1px solid #EEDB9B; }
+.account-callout span, .profile-section-title > div > span { color: #9A6B00; font-size: 9.5px; font-weight: 900; letter-spacing: .1em; }.account-callout h2 { margin: 5px 0; font-size: 17px; }.account-callout p { margin: 0; color: #6F6347; font-size: 11.5px; line-height: 1.5; }.account-callout > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 13px; }.account-callout .btn { padding: 10px; border-radius: 11px; font-size: 12.5px; }
+.profile-editor { margin-top: 12px; padding: 17px; }.profile-section-title { margin: 0 0 15px; align-items: end; }.profile-section-title h2 { margin-top: 3px; font-size: 17px; }.profile-section-title small { max-width: 50%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 10.5px; white-space: nowrap; }.profile-form, .password-form { display: grid; gap: 13px; }.profile-form textarea { resize: vertical; line-height: 1.5; }.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.profile-colors { margin: 0; padding: 0; border: 0; }.profile-colors legend { margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }.profile-colors > div { display: flex; gap: 9px; }.profile-colors button { width: 30px; height: 30px; padding: 0; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }.profile-colors button.on { box-shadow: 0 0 0 3px var(--gold); transform: scale(1.08); }
+.profile-message { margin: 12px 0 0; padding: 9px 11px; border-radius: 10px; background: var(--blue-soft); color: var(--blue-deep); font-size: 11.5px; font-weight: 700; }
+.account-card { margin-top: 10px; padding: 17px; }.account-summary { display: grid; gap: 8px; margin-bottom: 17px; }.account-summary > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 11px; background: #F7F9FC; }.account-summary span { color: var(--muted); font-size: 11px; }.account-summary strong { font-size: 11.5px; text-align: right; }.password-form { padding-top: 15px; border-top: 1px solid var(--line); }.password-form .btn { justify-self: end; }.account-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }.account-actions .btn { padding: 11px; border-radius: 11px; font-size: 12.5px; }
+
+/* 일반 계정 인증 */
+.account-auth-page { flex: 1; min-height: 100dvh; padding: 28px 18px; display: grid; place-items: center; background: radial-gradient(circle at 82% 10%, rgba(46,108,240,.3), transparent 32%), linear-gradient(155deg, #F8FAFF 0%, #EDF3FF 48%, #FFF8E7 100%); }
+.account-auth-card { width: min(420px, 100%); padding: 27px 23px; border: 1px solid rgba(203,214,237,.9); border-radius: 24px; background: rgba(255,255,255,.96); box-shadow: 0 24px 60px rgba(10,29,82,.14); }.account-auth-brand img { width: auto; height: 29px; }.account-auth-copy { margin: 28px 0 21px; }.account-auth-copy > span { color: var(--blue); font-size: 9.5px; font-weight: 900; letter-spacing: .15em; }.account-auth-copy h1 { margin: 7px 0 7px; font-size: 24px; letter-spacing: -.04em; }.account-auth-copy p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; word-break: keep-all; }.account-auth-form { display: grid; gap: 13px; }.account-auth-submit { margin-top: 3px; }.account-auth-error { margin: 0; padding: 9px 11px; border-radius: 10px; background: #FFF0F0; color: var(--red); font-size: 11.5px; line-height: 1.45; }.account-auth-switch, .account-auth-admin-help { margin: 17px 0 0; text-align: center; color: var(--muted); font-size: 11.5px; }.account-auth-switch a, .account-auth-admin-help a { color: var(--blue); font-weight: 800; }.account-auth-admin-help { margin-top: 10px; }.account-auth-home { display: block; margin-top: 20px; text-align: center; color: #8A94A9; font-size: 11px; }
 .menu { display: grid; gap: 6px; }
 .menu a, .menu button { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink); width: 100%; text-align: left; }
 .menu span { color: var(--muted); font-size: 12px; }

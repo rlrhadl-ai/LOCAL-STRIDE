@@ -1,2 +1,2 @@
-import AdminAuthForm from '@/components/AdminAuthForm';
-export default function AdminLoginPage() { return <AdminAuthForm mode="login" />; }
+import AccountAuthForm from '@/components/AccountAuthForm';
+export default function AdminLoginPage() { return <AccountAuthForm mode="login" nextPath="/admin" defaultEmail="toy146@naver.com" adminContext />; }

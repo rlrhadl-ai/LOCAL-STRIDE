@@ -1,34 +1,106 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
-import { api } from '@/lib/api';
+import { api, mediaUrl } from '@/lib/api';
 
-interface Me { user: { nickname: string; avatarColor: string; phoneVerified: boolean; kakaoId: string | null }; stats: { totalKm: number; runs: number; courses: number; medals: number; level: number; levelName: string }; medals: { medal: { name: string } }[]; coupons: { id: string; code: string; usedAt: string | null; coupon: { title: string; validUntil: string; merchant: { name: string } } }[]; challenges: { challenge: { name: string; targetCount: number }; completedSlugs: string[] }[]; crews: { id: string; name: string }[] }
+interface ProfileUser {
+  nickname: string; email: string | null; role: 'USER' | 'ADMIN'; avatarColor: string; avatarUrl: string | null;
+  bio: string | null; homeArea: string; weeklyGoalKm: number; preferredPaceSec: number | null;
+  phoneVerified: boolean; kakaoId: string | null; isAuthenticated: boolean;
+}
+interface Me {
+  user: ProfileUser;
+  stats: { totalKm: number; runs: number; courses: number; medals: number; level: number; levelName: string };
+  medals: { medal: { name: string } }[];
+  coupons: { id: string; code: string; usedAt: string | null; coupon: { title: string; validUntil: string; merchant: { name: string } } }[];
+  challenges: { challenge: { name: string; targetCount: number }; completedSlugs: string[] }[];
+  crews: { id: string; name: string }[];
+}
+type EditProfile = Pick<ProfileUser, 'nickname' | 'avatarColor' | 'bio' | 'homeArea' | 'weeklyGoalKm' | 'preferredPaceSec'>;
+const COLORS = ['#1B5BDF', '#0A1D52', '#117A65', '#E05A3F', '#7C4DCC', '#C48A12'];
+const paceText = (seconds: number | null) => seconds ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : '';
+const paceSeconds = (value: string) => {
+  if (!value.trim()) return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) throw new Error('선호 페이스는 6:30처럼 입력해 주세요');
+  const total = Number(match[1]) * 60 + Number(match[2]);
+  if (total < 180 || total > 900 || Number(match[2]) > 59) throw new Error('선호 페이스는 3:00~15:00 사이로 입력해 주세요');
+  return total;
+};
+
 export default function MePage() {
+  const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
-  const [nick, setNick] = useState('');
+  const [edit, setEdit] = useState<EditProfile | null>(null);
+  const [pace, setPace] = useState('');
   const [msg, setMsg] = useState('');
-  const load = () => api.get<Me>('/me').then((m) => { setMe(m); setNick(m.user.nickname); }).catch((e) => setMsg(e.message));
-  useEffect(() => { load(); }, []);
-  const save = async () => { try { await api.patch('/me', { nickname: nick }); await load(); setMsg('닉네임 변경 완료'); } catch (e: any) { setMsg(e.message); } };
-  const use = async (code: string) => { try { await api.post(`/me/coupons/${code}/use`); await load(); setMsg('쿠폰 사용 처리 — 매장 정산은 2단계'); } catch (e: any) { setMsg(e.message); } };
-  if (!me) return <main className="page"><AppHeader title="마이" /><div className="empty">{msg || '불러오는 중…'}</div></main>;
-  return (
-    <main className="page">
-      <AppHeader title="마이 페이지" />
-      <div className="profile"><div className="who"><div className="avatar" style={{ color: me.user.avatarColor }}>{me.user.nickname.slice(0, 1)}</div><div><h3>{me.user.nickname}</h3><div className="lv">Lv.{me.stats.level} {me.stats.levelName} · {me.user.phoneVerified ? '신원 확인 완료' : '익명 (기기 ID)'}</div></div></div><div className="prow"><div><b>{me.stats.totalKm.toFixed(1)}</b><span>총 거리 (km)</span></div><div><b>{me.stats.courses}</b><span>완주 코스</span></div><div><b>{me.stats.medals}</b><span>획득 메달</span></div></div></div>
-      <div className="card" style={{ marginTop: 12 }}><label className="field">공개 닉네임 (익명제)<div style={{ display: 'flex', gap: 6 }}><input className="input" value={nick} onChange={(e) => setNick(e.target.value)} maxLength={16} /><button className="btn sm" type="button" onClick={save}>저장</button></div></label>{msg && <div className="note">{msg}</div>}</div>
-      <div className="section-title"><h2>내 활동</h2></div>
-      <div className="menu">
-        <Link href="/missions">미션 · 메달 <span>{me.challenges[0] ? `${me.challenges[0].challenge.name} ${me.challenges[0].completedSlugs.length}/${me.challenges[0].challenge.targetCount}` : `메달 ${me.stats.medals}`}</span></Link>
-        <Link href="/rankings">랭킹 <span>{me.stats.runs}회 완주</span></Link>
-        <Link href="/courses?mine=1">내 코스 <span>만들기 ›</span></Link>
-        <Link href="/crews">내 크루 <span>{me.crews.map((c) => c.name).join(', ') || '없음'}</span></Link>
-      </div>
-      <div className="section-title"><h2>내 쿠폰</h2><span>{me.coupons.filter((c) => !c.usedAt).length}장 사용 가능</span></div>
-      <div className="stack">{me.coupons.map((c) => <div key={c.id} className="list-item" style={{ opacity: c.usedAt ? .5 : 1 }}><span className="ic" style={{ background: 'var(--gold-soft)', color: '#8A6410' }}>₩</span><div><h4>{c.coupon.title}</h4><p>{c.coupon.merchant.name} · {c.code} · {new Date(c.coupon.validUntil).toLocaleDateString('ko-KR')}까지</p></div>{c.usedAt ? <span className="tag">사용됨</span> : <button className="go" type="button" onClick={() => use(c.code)}>사용</button>}</div>)}{me.coupons.length === 0 && <div className="empty">완주하면 로컬 쿠폰이 지급돼요</div>}</div>
-      <p className="note">카카오 로그인·휴대폰 인증은 2단계. 지금은 이 기기에서만 기록이 이어집니다.</p>
-    </main>
-  );
+  const [saving, setSaving] = useState(false);
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+
+  const load = () => api.get<Me>('/me').then((value) => {
+    setMe(value);
+    setEdit({ nickname: value.user.nickname, avatarColor: value.user.avatarColor, bio: value.user.bio, homeArea: value.user.homeArea, weeklyGoalKm: value.user.weeklyGoalKm, preferredPaceSec: value.user.preferredPaceSec });
+    setPace(paceText(value.user.preferredPaceSec));
+  }).catch((error) => setMsg(error.message));
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault(); if (!edit) return; setSaving(true); setMsg('');
+    try {
+      await api.patch('/me', { ...edit, bio: edit.bio || null, weeklyGoalKm: Number(edit.weeklyGoalKm), preferredPaceSec: paceSeconds(pace) });
+      await load(); setMsg('프로필을 저장했습니다.');
+    } catch (error) { setMsg(error instanceof Error ? error.message : '프로필을 저장하지 못했습니다'); }
+    finally { setSaving(false); }
+  }
+  async function changePassword(event: FormEvent) {
+    event.preventDefault(); setMsg('');
+    if (passwords.next !== passwords.confirm) return setMsg('새 비밀번호가 서로 일치하지 않습니다.');
+    try {
+      await api.patch('/auth/password', { currentPassword: passwords.current, newPassword: passwords.next });
+      setPasswords({ current: '', next: '', confirm: '' }); setMsg('비밀번호를 변경했습니다.');
+    } catch (error) { setMsg(error instanceof Error ? error.message : '비밀번호를 변경하지 못했습니다'); }
+  }
+  async function logout() {
+    await api.post('/auth/logout').catch(() => undefined); router.replace('/'); router.refresh();
+  }
+  async function redeemCoupon(code: string) {
+    try { await api.post(`/me/coupons/${code}/use`); await load(); setMsg('쿠폰을 사용 처리했습니다.'); }
+    catch (error) { setMsg(error instanceof Error ? error.message : '쿠폰을 처리하지 못했습니다'); }
+  }
+
+  if (!me || !edit) return <main className="page"><AppHeader title="마이" /><div className="empty">{msg || '프로필을 불러오는 중…'}</div></main>;
+  const user = me.user;
+  return <main className="page">
+    <AppHeader title="마이 페이지" right={user.isAuthenticated ? <span className="account-status">로그인됨</span> : <Link className="header-login" href="/login">로그인</Link>} />
+
+    <section className="profile profile-rich">
+      <div className="who"><div className="avatar" style={{ background: user.avatarColor, color: '#fff' }}>{user.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt="" /> : user.nickname.slice(0, 1)}</div><div><div className="profile-name-row"><h3>{user.nickname}</h3>{user.role === 'ADMIN' && <span>ADMIN</span>}</div><div className="lv">Lv.{me.stats.level} {me.stats.levelName} · {user.homeArea}</div></div></div>
+      {user.bio && <p className="profile-bio">{user.bio}</p>}
+      <div className="prow"><div><b>{me.stats.totalKm.toFixed(1)}</b><span>총 거리 (km)</span></div><div><b>{me.stats.courses}</b><span>완주 코스</span></div><div><b>{me.stats.medals}</b><span>획득 메달</span></div></div>
+    </section>
+
+    {!user.isAuthenticated && <section className="account-callout"><div><span>기록을 안전하게 보관하세요</span><h2>이 기기의 기록을 내 계정으로</h2><p>가입하면 지금까지의 러닝 기록을 그대로 연결하고 여러 기기에서 로그인할 수 있어요.</p></div><div><Link className="btn" href="/signup">회원가입</Link><Link className="btn light" href="/login">로그인</Link></div></section>}
+
+    <section className="profile-editor card">
+      <div className="section-title profile-section-title"><div><span>RUNNER PROFILE</span><h2>내 프로필 관리</h2></div><small>{user.email || '기기 전용 익명 프로필'}</small></div>
+      <form onSubmit={saveProfile} className="profile-form">
+        <label className="field">공개 닉네임<input className="input" value={edit.nickname} onChange={(event) => setEdit({ ...edit, nickname: event.target.value })} minLength={2} maxLength={16} required /></label>
+        <label className="field">한 줄 소개<textarea className="input" rows={3} value={edit.bio || ''} onChange={(event) => setEdit({ ...edit, bio: event.target.value })} maxLength={160} placeholder="달리는 이유나 좋아하는 코스를 소개해 보세요" /></label>
+        <div className="profile-grid"><label className="field">활동 지역<input className="input" value={edit.homeArea} onChange={(event) => setEdit({ ...edit, homeArea: event.target.value })} maxLength={40} required /></label><label className="field">주간 목표(km)<input className="input" type="number" min="1" max="500" value={edit.weeklyGoalKm} onChange={(event) => setEdit({ ...edit, weeklyGoalKm: Number(event.target.value) })} required /></label></div>
+        <label className="field">선호 페이스 (분/km)<input className="input" value={pace} onChange={(event) => setPace(event.target.value)} placeholder="예: 6:30" inputMode="numeric" /></label>
+        <fieldset className="profile-colors"><legend>프로필 컬러</legend><div>{COLORS.map((color) => <button key={color} type="button" className={edit.avatarColor === color ? 'on' : ''} style={{ background: color }} aria-label={`${color} 선택`} onClick={() => setEdit({ ...edit, avatarColor: color })} />)}</div></fieldset>
+        <button className="btn" disabled={saving}>{saving ? '저장 중…' : '프로필 저장'}</button>
+      </form>
+      {msg && <p className="profile-message" role="status">{msg}</p>}
+    </section>
+
+    {user.isAuthenticated && <section className="card account-card"><div className="section-title profile-section-title"><div><span>ACCOUNT</span><h2>계정 및 보안</h2></div></div><div className="account-summary"><div><span>로그인 이메일</span><strong>{user.email}</strong></div><div><span>계정 권한</span><strong>{user.role === 'ADMIN' ? '관리자 · 일반 회원' : '일반 회원'}</strong></div></div><form className="password-form" onSubmit={changePassword}><label className="field">현재 비밀번호<input className="input" type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} autoComplete="current-password" required /></label><div className="profile-grid"><label className="field">새 비밀번호<input className="input" type="password" minLength={8} value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} autoComplete="new-password" required /></label><label className="field">새 비밀번호 확인<input className="input" type="password" minLength={8} value={passwords.confirm} onChange={(event) => setPasswords({ ...passwords, confirm: event.target.value })} autoComplete="new-password" required /></label></div><button className="btn light sm">비밀번호 변경</button></form><div className="account-actions">{user.role === 'ADMIN' && <Link className="btn light" href="/admin">관리자 콘솔</Link>}<button className="btn ghost" type="button" onClick={logout}>로그아웃</button></div></section>}
+
+    <div className="section-title"><h2>내 활동</h2></div>
+    <div className="menu"><Link href="/missions">미션 · 메달 <span>{me.challenges[0] ? `${me.challenges[0].challenge.name} ${me.challenges[0].completedSlugs.length}/${me.challenges[0].challenge.targetCount}` : `메달 ${me.stats.medals}`}</span></Link><Link href="/rankings">랭킹 <span>{me.stats.runs}회 완주</span></Link><Link href="/courses?mine=1">내 코스 <span>만들기 ›</span></Link><Link href="/crews">내 크루 <span>{me.crews.map((crew) => crew.name).join(', ') || '없음'}</span></Link></div>
+    <div className="section-title"><h2>내 쿠폰</h2><span>{me.coupons.filter((coupon) => !coupon.usedAt).length}장 사용 가능</span></div>
+    <div className="stack">{me.coupons.map((coupon) => <div key={coupon.id} className="list-item" style={{ opacity: coupon.usedAt ? .5 : 1 }}><span className="ic" style={{ background: 'var(--gold-soft)', color: '#8A6410' }}>₩</span><div><h4>{coupon.coupon.title}</h4><p>{coupon.coupon.merchant.name} · {coupon.code} · {new Date(coupon.coupon.validUntil).toLocaleDateString('ko-KR')}까지</p></div>{coupon.usedAt ? <span className="tag">사용됨</span> : <button className="go" type="button" onClick={() => redeemCoupon(coupon.code)}>사용</button>}</div>)}{me.coupons.length === 0 && <div className="empty">코스를 완주하면 로컬 쿠폰이 지급돼요.</div>}</div>
+  </main>;
 }

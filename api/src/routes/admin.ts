@@ -1,14 +1,14 @@
-import { randomBytes, timingSafeEqual } from 'crypto';
+import { timingSafeEqual } from 'crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
-import { hashPassword, hashSessionToken, verifyPassword } from '../lib/password';
+import { hashPassword, verifyPassword } from '../lib/password';
+import { endUserSession, startUserSession } from '../lib/session';
 import { imageUpload } from '../lib/uploads';
-import { ADMIN_COOKIE, cookieValue, requireAdmin } from '../middleware/adminAuth';
+import { requireAdmin } from '../middleware/adminAuth';
 import { HttpError, wrap } from '../middleware/error';
 
 export const admin = Router();
-const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const allowedEmails = new Set((process.env.ADMIN_EMAILS || 'toy146@naver.com').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
 const adminSetupCode = String(process.env.ADMIN_SETUP_CODE || '');
 const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -26,17 +26,9 @@ function loginAllowed(key: string) {
 function clearLoginAttempts(key: string) { attempts.delete(key); }
 function sameSecret(left: string, right: string) { const a = Buffer.from(left), b = Buffer.from(right); return a.length === b.length && timingSafeEqual(a, b); }
 
-async function startSession(req: any, res: any, userId: string) {
-  const token = randomBytes(32).toString('base64url');
-  await prisma.adminSession.deleteMany({ where: { OR: [{ expiresAt: { lt: new Date() } }, { userId }] } });
-  await prisma.adminSession.create({ data: { tokenHash: hashSessionToken(token), userId, expiresAt: new Date(Date.now() + SESSION_MS) } });
-  const secure = req.secure || String(req.header('x-forwarded-proto') || '').split(',')[0].trim() === 'https';
-  res.cookie(ADMIN_COOKIE, token, { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: SESSION_MS });
-}
-
 const credentials = z.object({
   email: z.string().email().transform((value) => value.trim().toLowerCase()),
-  password: z.string().min(10, '비밀번호는 10자 이상이어야 합니다').max(100),
+  password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다').max(100).regex(/[A-Za-z]/, '비밀번호에 영문자를 포함해 주세요').regex(/[0-9]/, '비밀번호에 숫자를 포함해 주세요'),
 });
 
 admin.post('/admin/auth/signup', wrap(async (req, res) => {
@@ -44,9 +36,12 @@ admin.post('/admin/auth/signup', wrap(async (req, res) => {
   if (!allowedEmails.has(body.email)) throw new HttpError(403, '등록된 관리자 이메일만 가입할 수 있습니다');
   if (!adminSetupCode) throw new HttpError(503, '서버에 최초 가입 코드가 설정되지 않았습니다');
   if (!sameSecret(body.setupCode, adminSetupCode)) throw new HttpError(403, '최초 가입 코드가 올바르지 않습니다');
-  if (await prisma.user.findUnique({ where: { email: body.email } })) throw new HttpError(409, '이미 가입된 관리자 이메일입니다');
-  const user = await prisma.user.create({ data: { email: body.email, passwordHash: await hashPassword(body.password), nickname: body.nickname, role: 'ADMIN' } });
-  await startSession(req, res, user.id);
+  const existing = await prisma.user.findUnique({ where: { email: body.email } });
+  if (existing?.passwordHash && !await verifyPassword(body.password, existing.passwordHash)) throw new HttpError(409, '이미 가입된 계정입니다. 해당 계정의 비밀번호를 입력해 주세요');
+  const user = existing
+    ? await prisma.user.update({ where: { id: existing.id }, data: { nickname: body.nickname, role: 'ADMIN', passwordHash: existing.passwordHash || await hashPassword(body.password) } })
+    : await prisma.user.create({ data: { email: body.email, passwordHash: await hashPassword(body.password), nickname: body.nickname, role: 'ADMIN' } });
+  await startUserSession(req, res, user.id);
   res.status(201).json({ user: { id: user.id, email: user.email, nickname: user.nickname, role: user.role } });
 }));
 
@@ -57,16 +52,11 @@ admin.post('/admin/auth/login', wrap(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { email: body.email } });
   if (!user?.passwordHash || user.role !== 'ADMIN' || !user.isActive || !await verifyPassword(body.password, user.passwordHash)) throw new HttpError(401, '이메일 또는 비밀번호가 올바르지 않습니다');
   clearLoginAttempts(key);
-  await startSession(req, res, user.id);
+  await startUserSession(req, res, user.id);
   res.json({ user: { id: user.id, email: user.email, nickname: user.nickname, role: user.role } });
 }));
 
-admin.post('/admin/auth/logout', wrap(async (req, res) => {
-  const token = cookieValue(req, ADMIN_COOKIE);
-  if (token) await prisma.adminSession.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
-  res.clearCookie(ADMIN_COOKIE, { httpOnly: true, sameSite: 'lax', path: '/' });
-  res.status(204).end();
-}));
+admin.post('/admin/auth/logout', wrap(async (req, res) => { await endUserSession(req, res); res.status(204).end(); }));
 
 admin.get('/admin/auth/session', requireAdmin, (req, res) => res.json({ user: req.admin }));
 admin.use('/admin', requireAdmin);
@@ -86,16 +76,21 @@ admin.post('/admin/uploads', imageUpload.single('file'), (req, res) => {
 
 admin.get('/admin/users', wrap(async (_req, res) => {
   const items = await prisma.user.findMany({
-    select: { id: true, nickname: true, email: true, role: true, isActive: true, phoneVerified: true, createdAt: true, _count: { select: { runs: true, courses: true } } },
+    select: { id: true, nickname: true, email: true, role: true, isActive: true, phoneVerified: true, avatarColor: true, avatarUrl: true, bio: true, homeArea: true, weeklyGoalKm: true, preferredPaceSec: true, createdAt: true, _count: { select: { runs: true, courses: true } } },
     orderBy: { createdAt: 'desc' }, take: 500,
   });
   res.json({ items });
 }));
 
 admin.patch('/admin/users/:id', wrap(async (req, res) => {
-  const body = z.object({ nickname: z.string().trim().min(2).max(20).optional(), isActive: z.boolean().optional() }).parse(req.body);
+  const body = z.object({
+    nickname: z.string().trim().min(2).max(16).optional(), isActive: z.boolean().optional(),
+    avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), avatarUrl: imageUrl.nullable().optional(),
+    bio: z.string().trim().max(160).nullable().optional(), homeArea: z.string().trim().min(2).max(40).optional(),
+    weeklyGoalKm: z.number().int().min(1).max(500).optional(), preferredPaceSec: z.number().int().min(180).max(900).nullable().optional(),
+  }).parse(req.body);
   if (req.params.id === req.admin!.id && body.isActive === false) throw new HttpError(400, '현재 로그인한 관리자 계정은 비활성화할 수 없습니다');
-  res.json(await prisma.user.update({ where: { id: String(req.params.id) }, data: body, select: { id: true, nickname: true, email: true, role: true, isActive: true } }));
+  res.json(await prisma.user.update({ where: { id: String(req.params.id) }, data: body, select: { id: true, nickname: true, email: true, role: true, isActive: true, avatarColor: true, avatarUrl: true, bio: true, homeArea: true, weeklyGoalKm: true, preferredPaceSec: true } }));
 }));
 
 admin.get('/admin/courses', wrap(async (_req, res) => {

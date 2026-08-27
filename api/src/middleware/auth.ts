@@ -1,10 +1,38 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
+import { hashSessionToken } from '../lib/password';
+import { sessionToken } from '../lib/session';
 
 declare global {
   namespace Express {
-    interface Request { user?: { id: string; nickname: string } }
+    interface Request {
+      user?: {
+        id: string;
+        nickname: string;
+        email?: string | null;
+        role?: 'USER' | 'ADMIN';
+        isAuthenticated?: boolean;
+      };
+    }
   }
+}
+
+/** 로그인 쿠키가 있으면 익명 기기 사용자를 실제 계정으로 교체한다. */
+export async function sessionAuth(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const token = sessionToken(req);
+    if (!token) return next();
+    const session = await prisma.adminSession.findUnique({
+      where: { tokenHash: hashSessionToken(token) },
+      include: { user: { select: { id: true, nickname: true, email: true, role: true, isActive: true } } },
+    });
+    if (!session || session.expiresAt <= new Date() || !session.user.isActive) {
+      if (session) await prisma.adminSession.delete({ where: { id: session.id } }).catch(() => undefined);
+      return next();
+    }
+    req.user = { id: session.user.id, nickname: session.user.nickname, email: session.user.email, role: session.user.role, isAuthenticated: true };
+    next();
+  } catch (error) { next(error); }
 }
 
 /**
@@ -29,5 +57,10 @@ export async function deviceAuth(req: Request, _res: Response, next: NextFunctio
 
 export function requireUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user) return res.status(401).json({ error: 'x-device-id 헤더가 필요합니다' });
+  next();
+}
+
+export function requireAccount(req: Request, res: Response, next: NextFunction) {
+  if (!req.user?.isAuthenticated || !req.user.email) return res.status(401).json({ error: '로그인이 필요합니다' });
   next();
 }

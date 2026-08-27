@@ -12,7 +12,7 @@ const I = {
 
 export default function TabBar() {
   const p = usePathname() || '/';
-  if (p.startsWith('/run/') || p.startsWith('/finish/') || p.startsWith('/admin')) return null;
+  if (p.startsWith('/run/') || p.startsWith('/finish/') || p.startsWith('/admin') || p === '/login' || p === '/signup') return null;
   const on = (h: string) => (h === '/' ? p === '/' : p.startsWith(h));
   return (
     <nav className="tabbar" aria-label="하단 메뉴">

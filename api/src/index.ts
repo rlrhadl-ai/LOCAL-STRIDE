@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { Server } from 'socket.io';
-import { deviceAuth } from './middleware/auth';
+import { deviceAuth, sessionAuth } from './middleware/auth';
 import { errorHandler } from './middleware/error';
 import { health } from './routes/health';
 import { tour } from './routes/tour';
@@ -23,6 +23,7 @@ import { ai } from './routes/ai';
 import { partners } from './routes/partners';
 import { admin } from './routes/admin';
 import { content } from './routes/content';
+import { auth } from './routes/auth';
 import { uploadDir } from './lib/uploads';
 import { attachLive } from './live/ranking';
 
@@ -37,9 +38,10 @@ app.use(express.json({ limit: '2mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/uploads', express.static(uploadDir, { maxAge: '7d', immutable: true }));
 app.use(deviceAuth);
+app.use(sessionAuth);
 
 app.get('/', (_req, res) => res.json({ name: 'LOCAL STRIDE API', docs: '/api/health' }));
-app.use('/api', health, tour, weather, courses, recommend, runs, missions, crews, events, mates, rankings, me, ai, partners, content, admin);
+app.use('/api', health, auth, tour, weather, courses, recommend, runs, missions, crews, events, mates, rankings, me, ai, partners, content, admin);
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 app.use(errorHandler);
 
