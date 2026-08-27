@@ -16,12 +16,12 @@ export interface PushItem { title: string; type: string; status: string; desc: s
 export interface EngineState {
   status: 'idle' | 'starting' | 'running' | 'paused' | 'finishing' | 'finished' | 'error';
   runId: string | null; progress: number; elapsedSec: number; runner: LatLng | null; done: LatLng[]; nextCp: number; checkedIn: Set<number>;
-  push: PushItem | null; pois: Poi[]; log: LogEntry[]; nearbySource: NearbyResult['source'] | null; nearbyMs: number | null; lastRaw: unknown; gpsNote: string | null; error: string | null;
+  push: PushItem | null; pois: Poi[]; log: LogEntry[]; nearbySource: NearbyResult['source'] | null; nearbyMs: number | null; lastRaw: unknown; gpsNote: string | null; gpsAccuracyM: number | null; error: string | null;
 }
 
 export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
-  const [s, setS] = useState<EngineState>({ status: 'idle', runId: null, progress: 0, elapsedSec: 0, runner: null, done: [], nextCp: 1, checkedIn: new Set([0]), push: null, pois: [], log: [], nearbySource: null, nearbyMs: null, lastRaw: null, gpsNote: null, error: null });
-  const r = useRef({ progress: 0, nextCp: 1, seen: new Set<string>(), raf: 0, lastTs: 0, paused: false, runId: '' as string, cps: [] as Course['checkpoints'], pois: [] as CoursePoi[], route: [] as LatLng[], cum: [] as number[], total: 0, lastQueryAt: -1e9, trackBuf: [] as { lat: number; lng: number; t: number }[], lastTrackSent: 0, watch: null as number | null, lastFix: null as LatLng | null, elapsed: 0, startedAt: 0, pushTimer: 0, speed, mode, finishing: false, log: [] as LogEntry[] });
+  const [s, setS] = useState<EngineState>({ status: 'idle', runId: null, progress: 0, elapsedSec: 0, runner: null, done: [], nextCp: 1, checkedIn: new Set([0]), push: null, pois: [], log: [], nearbySource: null, nearbyMs: null, lastRaw: null, gpsNote: null, gpsAccuracyM: null, error: null });
+  const r = useRef({ progress: 0, nextCp: 1, seen: new Set<string>(), raf: 0, lastTs: 0, paused: false, runId: '' as string, cps: [] as Course['checkpoints'], pois: [] as CoursePoi[], route: [] as LatLng[], cum: [] as number[], total: 0, lastQueryAt: -1e9, trackBuf: [] as { lat: number; lng: number; t: number; accuracy: number }[], lastTrackSent: 0, flushPromise: null as Promise<void> | null, watch: null as number | null, lastFix: null as LatLng | null, lastFixAt: 0, elapsed: 0, startedAt: 0, pushTimer: 0, speed, mode, finishing: false, checkinPending: false, log: [] as LogEntry[] });
   r.current.speed = speed; r.current.mode = mode;
 
   const clock = () => (r.current.mode === 'DEMO' ? fmtTime((r.current.progress / 1000) * PACE_SEC) : fmtTime(r.current.elapsed));
@@ -58,31 +58,54 @@ export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
     } catch { /* 네트워크 실패는 무시 (코스 POI 는 계속 동작) */ }
   };
 
-  const checkinServer = async (i: number, ll: LatLng, method: 'DEMO' | 'GPS') => {
+  const checkinServer = async (i: number, ll: LatLng, method: 'DEMO' | 'GPS', t = Date.now(), accuracy = 0) => {
+    if (r.current.checkinPending) return false;
+    r.current.checkinPending = true;
     const cp = r.current.cps![i];
-    try { await api.post(`/runs/${r.current.runId}/checkin`, { checkpointId: cp.id, lat: ll[0], lng: ll[1], method }); } catch (e: any) { log('sense', `체크인 실패: ${e.message}`); return false; }
-    r.current.nextCp = i + 1;
-    setS((p) => { const c = new Set(p.checkedIn); c.add(i); return { ...p, nextCp: i + 1, checkedIn: c }; });
-    if (i < r.current.cps!.length - 1) { log('sense', `체크포인트 ${i} '${cp.name}' ${cp.radiusM}m 반경 진입`); log('act', `자동 체크인 저장 · 미션 ${i + 1}/${r.current.cps!.length}${cp.reward ? ' · 리워드 대상 구간' : ''}`); }
-    return true;
+    try {
+      if (method === 'GPS') await flushTrack(true);
+      await api.post(`/runs/${r.current.runId}/checkin`, { checkpointId: cp.id, lat: ll[0], lng: ll[1], t, accuracy, method });
+      r.current.nextCp = i + 1;
+      setS((p) => { const c = new Set(p.checkedIn); c.add(i); return { ...p, nextCp: i + 1, checkedIn: c }; });
+      if (i < r.current.cps!.length - 1) { log('sense', `체크포인트 ${i} '${cp.name}' ${cp.radiusM}m 반경 진입`); log('act', `GPS 궤적 확인 · 자동 체크인 저장 · 미션 ${i + 1}/${r.current.cps!.length}${cp.reward ? ' · 리워드 대상 구간' : ''}`); }
+      return true;
+    } catch (e: any) {
+      log('sense', `체크인 실패: ${e.message}`);
+      return false;
+    } finally {
+      r.current.checkinPending = false;
+    }
   };
 
   const flushTrack = async (force = false) => {
+    if (r.current.flushPromise) {
+      await r.current.flushPromise;
+      if (!force) return;
+    }
     const now = Date.now();
     if (!r.current.trackBuf.length || (!force && now - r.current.lastTrackSent < 3000)) return;
     const pts = r.current.trackBuf.splice(0); r.current.lastTrackSent = now;
-    try { await api.post(`/runs/${r.current.runId}/track`, { points: pts }); } catch { /* ignore */ }
+    const task = (async () => {
+      try {
+        const saved = await api.post<{ distanceM: number; points: number }>(`/runs/${r.current.runId}/track`, { points: pts });
+        r.current.progress = saved.distanceM;
+        setS((p) => ({ ...p, progress: saved.distanceM }));
+      } catch {
+        r.current.trackBuf = [...pts, ...r.current.trackBuf].slice(-500);
+      } finally {
+        r.current.flushPromise = null;
+      }
+    })();
+    r.current.flushPromise = task;
+    await task;
   };
 
   const finish = useCallback(async () => {
     if (r.current.finishing || !r.current.runId) return null;
-    r.current.finishing = true; cancelAnimationFrame(r.current.raf);
-    if (r.current.watch != null) navigator.geolocation.clearWatch(r.current.watch);
+    r.current.finishing = true;
     setS((p) => ({ ...p, status: 'finishing' }));
     await flushTrack(true);
     const durationSec = r.current.mode === 'DEMO' ? Math.round((r.current.total / 1000) * PACE_SEC) : Math.max(1, Math.round(r.current.elapsed));
-    // 남은 체크포인트(데모/건너뛰기)는 서버에 체크인
-    if (r.current.mode === 'DEMO') for (let i = r.current.nextCp; i < r.current.cps!.length; i++) await checkinServer(i, [r.current.cps![i].lat, r.current.cps![i].lng], 'DEMO');
     try {
       const summary = await api.post<FinishSummary>(`/runs/${r.current.runId}/finish`, { durationSec, distanceM: Math.round(r.current.progress) });
       log('decide', `완주 조건 ${summary.valid ? '충족' : '미충족'} — 체크인 ${summary.checkins}/${summary.checkpoints} · ${(summary.distanceM / 1000).toFixed(2)}km · ${summary.pace}`);
@@ -90,9 +113,15 @@ export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
       log('learn', `선호 테마 '${course?.themes.join('·')}' 가중치 갱신 → 다음 추천에 반영`);
       sessionStorage.setItem(`ls_finish_${r.current.runId}`, JSON.stringify({ summary, log: r.current.log, courseName: course?.name }));
       speak(summary.valid ? '완주를 축하합니다. 메달과 쿠폰이 지급되었습니다.' : '러닝을 마쳤습니다.');
+      cancelAnimationFrame(r.current.raf);
+      if (r.current.watch != null) navigator.geolocation.clearWatch(r.current.watch);
       setS((p) => ({ ...p, status: 'finished' }));
       return summary;
-    } catch (e: any) { setS((p) => ({ ...p, status: 'error', error: e.message })); r.current.finishing = false; return null; }
+    } catch (e: any) {
+      setS((p) => ({ ...p, status: 'running', error: e.message, gpsNote: e.message }));
+      r.current.finishing = false;
+      return null;
+    }
   }, [course, log]);
 
   const tick = (ts: number) => {
@@ -101,7 +130,7 @@ export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
     const dt = Math.min(0.1, (ts - c.lastTs) / 1000); c.lastTs = ts;
     c.progress = Math.min(c.total, c.progress + dt * c.speed * (c.total / ((c.total / 5000) * BASE_SEC)));
     const ll = pointAt(c.route, c.cum, c.progress);
-    c.trackBuf.push({ lat: ll[0], lng: ll[1], t: Date.now() });
+    c.trackBuf.push({ lat: ll[0], lng: ll[1], t: Date.now(), accuracy: 0 });
     if (c.nextCp < c.cps!.length - 1 && c.progress >= c.cps![c.nextCp].distM) { const i = c.nextCp; c.nextCp = i + 1; void checkinServer(i, [c.cps![i].lat, c.cps![i].lng], 'DEMO'); }
     void checkDiscovery(ll, c.progress);
     void flushTrack();
@@ -112,33 +141,57 @@ export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
 
   const onFix = (pos: GeolocationPosition) => {
     const c = r.current; if (c.finishing || c.paused) return;
+    const accuracy = Math.round(pos.coords.accuracy);
+    if (accuracy > 80) {
+      setS((p) => ({ ...p, gpsAccuracyM: accuracy, gpsNote: `GPS 정확도 ±${accuracy}m — 탁 트인 곳으로 이동해 주세요` }));
+      return;
+    }
     const ll: LatLng = [pos.coords.latitude, pos.coords.longitude];
-    if (c.lastFix) { const d = haversine(c.lastFix, ll); if (d >= 4 && d < 300) c.progress += d; }
-    c.lastFix = ll; c.elapsed = (Date.now() - c.startedAt) / 1000;
-    c.trackBuf.push({ lat: ll[0], lng: ll[1], t: Date.now() });
+    const fixAt = Date.now();
+    if (c.lastFix) {
+      const d = haversine(c.lastFix, ll);
+      const dt = Math.max(1, (fixAt - c.lastFixAt) / 1000);
+      if (d >= 4 && d / dt <= 7) c.progress += d;
+    }
+    c.lastFix = ll; c.lastFixAt = fixAt; c.elapsed = (fixAt - c.startedAt) / 1000;
+    c.trackBuf.push({ lat: ll[0], lng: ll[1], t: fixAt, accuracy });
     const toStart = haversine(ll, c.route[0]);
-    const note = toStart > 1500 ? `코스 출발점까지 ${(toStart / 1000).toFixed(1)}km — 현장이 아니면 데모 GPS를 권장` : null;
-    setS((p) => ({ ...p, progress: c.progress, elapsedSec: c.elapsed, runner: ll, done: [...p.done, ll].slice(-2000), gpsNote: note }));
-    const nx = c.cps![c.nextCp]; if (nx && haversine(ll, [nx.lat, nx.lng]) <= nx.radiusM) { const i = c.nextCp; c.nextCp = i + 1; void checkinServer(i, ll, 'GPS').then((ok) => { if (ok && i >= c.cps!.length - 1) void finish(); }); }
+    const note = toStart > 1500 ? `코스 출발점에서 ${(toStart / 1000).toFixed(1)}km 떨어져 있습니다` : `GPS 연결됨 · 정확도 ±${accuracy}m`;
+    setS((p) => ({ ...p, progress: c.progress, elapsedSec: c.elapsed, runner: ll, done: [...p.done, ll].slice(-2000), gpsNote: note, gpsAccuracyM: accuracy }));
+    const nx = c.cps![c.nextCp];
+    if (nx && !c.checkinPending && haversine(ll, [nx.lat, nx.lng]) <= nx.radiusM + Math.min(accuracy, 30)) {
+      const i = c.nextCp;
+      void checkinServer(i, ll, 'GPS', fixAt, accuracy).then((ok) => { if (ok && i >= c.cps!.length - 1) void finish(); });
+    }
     void checkDiscovery(ll, c.progress); void flushTrack();
   };
 
   const start = useCallback(async () => {
     if (!course || r.current.runId) return;
-    setS((p) => ({ ...p, status: 'starting', error: null }));
+    setS((p) => ({ ...p, status: 'starting', error: null, gpsNote: mode === 'LIVE' ? 'GPS 권한을 요청하고 현재 위치를 확인하는 중…' : null }));
     try {
-      const { run, course: full } = await api.post<{ run: Run; course: Course }>('/runs', { courseId: course.id, mode });
+      let initialPosition: GeolocationPosition | null = null;
+      if (mode === 'LIVE') {
+        if (!window.isSecureContext) throw new Error('실제 GPS 러닝은 HTTPS 연결에서만 사용할 수 있습니다');
+        if (!('geolocation' in navigator)) throw new Error('이 기기는 GPS 위치 정보를 지원하지 않습니다');
+        initialPosition = await new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }));
+        if (initialPosition.coords.accuracy > 80) throw new Error(`GPS 정확도가 낮습니다 (±${Math.round(initialPosition.coords.accuracy)}m) — 탁 트인 곳에서 다시 시도해 주세요`);
+      }
+      const initialFix = initialPosition ? { lat: initialPosition.coords.latitude, lng: initialPosition.coords.longitude, t: Date.now(), accuracy: initialPosition.coords.accuracy } : undefined;
+      const { run, course: full } = await api.post<{ run: Run; course: Course }>('/runs', { courseId: course.id, mode, start: initialFix });
       const c = r.current;
       c.runId = run.id; c.cps = full.checkpoints ?? []; c.pois = full.pois ?? []; c.route = full.polyline; c.cum = cumulative(full.polyline); c.total = c.cum[c.cum.length - 1];
-      c.progress = 0; c.nextCp = 1; c.seen = new Set(); c.lastQueryAt = -1e9; c.startedAt = Date.now(); c.finishing = false; c.paused = false; c.log = [];
-      setS((p) => ({ ...p, status: 'running', runId: run.id, runner: c.route[0], done: [], nextCp: 1, checkedIn: new Set([0]), pois: [], push: null }));
-      log('sense', `GPS ${mode === 'DEMO' ? '재생' : '연결'} · 출발 (${c.route[0][0].toFixed(4)}, ${c.route[0][1].toFixed(4)}) · 코스 ${(c.total / 1000).toFixed(1)}km`);
+      c.progress = 0; c.nextCp = 1; c.seen = new Set(); c.lastQueryAt = -1e9; c.startedAt = new Date(run.startedAt).getTime(); c.finishing = false; c.paused = false; c.checkinPending = false; c.log = [];
+      const initialLl: LatLng = initialFix ? [initialFix.lat, initialFix.lng] : c.route[0];
+      c.lastFix = initialLl; c.lastFixAt = initialFix?.t ?? Date.now();
+      setS((p) => ({ ...p, status: 'running', runId: run.id, runner: initialLl, done: [], nextCp: 1, checkedIn: new Set([0]), pois: [], push: null, gpsAccuracyM: initialFix ? Math.round(initialFix.accuracy) : null, gpsNote: initialFix ? `출발점 GPS 인증 완료 · 정확도 ±${Math.round(initialFix.accuracy)}m` : null }));
+      log('sense', `실제 GPS 출발 인증 · (${initialLl[0].toFixed(4)}, ${initialLl[1].toFixed(4)}) · 정확도 ±${Math.round(initialFix?.accuracy ?? 0)}m · 코스 ${(c.total / 1000).toFixed(1)}km`);
       log('decide', `코스 컨텍스트 로드 — 체크포인트 ${c.cps.length}곳 · 코스 등록 장소 ${c.pois.length}곳 · TourAPI 반경 500m 실시간 조회 · 음성 ${voiceOn() ? '켬' : '끔'}`);
       speak(`${course.name}을 시작합니다. 가볍게 출발하세요.`);
       if (mode === 'DEMO') { c.lastTs = performance.now(); c.raf = requestAnimationFrame(tick); }
-      else if ('geolocation' in navigator) c.watch = navigator.geolocation.watchPosition(onFix, (err) => { setS((p) => ({ ...p, gpsNote: `위치를 받을 수 없어요 (${err.message}) — 데모 GPS로 다시 시작하세요` })); }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
+      else if ('geolocation' in navigator) c.watch = navigator.geolocation.watchPosition(onFix, (err) => { setS((p) => ({ ...p, gpsNote: `GPS 위치를 받을 수 없습니다 (${err.message})` })); }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
       else setS((p) => ({ ...p, gpsNote: '이 기기는 위치 정보를 지원하지 않아요' }));
-    } catch (e: any) { setS((p) => ({ ...p, status: 'error', error: e.message })); }
+    } catch (e: any) { setS((p) => ({ ...p, status: 'error', error: e.message, gpsNote: null })); }
   }, [course, mode, log]);
 
   const togglePause = useCallback(() => {
