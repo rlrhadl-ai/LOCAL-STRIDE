@@ -11,6 +11,12 @@ import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation } f
 const KMS = [3, 5, 7, 10];
 const THEMES = ['수변', '야경', '미식', '역사'];
 
+function PartnerGlyph({ category, featured }: { category: string; featured: boolean }) {
+  if (featured) return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M11 32c5-2 7-6 8-13 4 6 8 9 18 10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><path d="M12 35h25" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><circle cx="31" cy="16" r="4" fill="currentColor"/></svg>;
+  if (category.includes('카페')) return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M12 17h22v10a10 10 0 0 1-10 10h-2a10 10 0 0 1-10-10V17Z" stroke="currentColor" strokeWidth="3"/><path d="M34 21h3a5 5 0 0 1 0 10h-4M17 11c0 2 2 2 2 4M24 11c0 2 2 2 2 4" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>;
+  return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M14 13v9a5 5 0 0 0 5 5V37M20 13v24M26 13v9a6 6 0 0 0 6 6V37M32 13v24" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>;
+}
+
 export default function Home() {
   const router = useRouter();
   const [km, setKm] = useState(5);
@@ -57,7 +63,12 @@ export default function Home() {
   return (
     <main className="page">
       <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg></Link>} />
-      <p className="greet">안녕하세요, 러너님! 👋 오늘도 멋진 러닝 되세요!</p>
+      <section className="local-hero">
+        <div className="local-hero-top"><span>DAEGU BORN · RUNNER CONNECTED</span><b>대구 러너 에디션</b></div>
+        <h2>대구 토박이가 고른 길,<br /><em>대구 러너와 달립니다.</em></h2>
+        <p>수성못의 아침부터 들안길의 밤까지. 길을 기록하는 데서 멈추지 않고 사람과 동네를 연결해요.</p>
+        <div className="local-hero-tags"><span>대구 러너 큐레이션</span><span>러닝 메이트</span><span>완주 후 로컬 혜택</span></div>
+      </section>
       {err && <div className="card" style={{ borderColor: 'var(--red)', color: 'var(--red)', fontSize: 13 }}>{err}</div>}
       <div className="card weather">
         <div>
@@ -94,7 +105,15 @@ export default function Home() {
       </div>
       <BannerCarousel items={banners} />
 
-      <div className="section-title"><h2>달리며 만나는 수성구</h2><span>{nearby?.source === 'TOURAPI' ? '관광공사 공공데이터' : '저장 관광지 데이터'}</span></div>
+      <section className="local-program-card">
+        <div className="local-program-head"><span>DAEGU RUNNING CLUB</span><i aria-hidden>같이</i></div>
+        <h2>오늘 대구에서 같이 달릴 사람</h2>
+        <p>대구 러너가 길을 안내하고, 혼자 온 러너도 자연스럽게 섞이는 일상 러닝을 준비하고 있어요.</p>
+        <div className="local-program-types"><span>아침런</span><span>퇴근런</span><span>독립런</span><span>주제형 번개런</span></div>
+        <div className="local-program-actions"><Link href="/mates">러닝 메이트 찾기 <b>→</b></Link><Link href="/crews">대구 크루 보기 <b>→</b></Link></div>
+      </section>
+
+      <div className="section-title editorial-title"><div><span className="section-kicker">LOCAL STORY</span><h2>대구 사람들이 달리다 멈추는 곳</h2></div><span>{nearby?.source === 'TOURAPI' ? '관광공사 공공데이터' : '저장 관광지 데이터'}</span></div>
       {attractions.length > 0 ? <div className="spot-scroller">
         {attractions.map((spot) => <article className="spot-card" key={spot.contentId ?? `${spot.title}-${spot.lat}`}>
           <div className="spot-photo">{spot.firstImage ? <img src={spot.firstImage} alt="" /> : <span aria-hidden>LOCAL<br />SPOT</span>}<em>{placeKind(spot.contentTypeId)}</em></div>
@@ -103,29 +122,39 @@ export default function Home() {
       </div> : <div className="card empty-home">주변 관광지를 불러오는 중이에요.</div>}
       <div className="source-row"><LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.source === 'TOURAPI' ? 'TourAPI' : '저장 관광지'} /><span>위치·이미지는 제공 기관 정보에 따라 달라질 수 있어요.</span></div>
 
-      <div className="section-title"><h2>러닝 후 누리는 로컬 혜택</h2><span>완주 리워드 파트너</span></div>
+      <div className="section-title editorial-title"><div><span className="section-kicker">AFTER RUN</span><h2>완주 다음, 대구에서 쉬어가기</h2></div><span>러너를 반기는 로컬 파트너</span></div>
       <div className="partner-list">
         {partners.map((partner) => <article className={`partner-card ${partner.status === 'COMING_SOON' ? 'featured' : ''}`} key={partner.id}>
-          <div className="partner-icon" aria-hidden>{partner.imageUrl ? <img src={mediaUrl(partner.imageUrl)} alt="" /> : partner.status === 'COMING_SOON' ? 'R' : '₩'}</div>
+          <div className="partner-icon" aria-hidden>{partner.imageUrl ? <img src={mediaUrl(partner.imageUrl)} alt="" /> : <PartnerGlyph category={partner.category} featured={partner.status === 'COMING_SOON'} />}</div>
           <div className="partner-body">
             <div className="partner-line"><span>{partner.category}</span><em>{partner.status === 'COMING_SOON' ? '제휴 준비 중' : partner.status === 'ACTIVE' ? '완주 혜택' : '시연 혜택'}</em></div>
             <h3>{partner.name}</h3>
             <strong>{partner.offerTitle}</strong>
             {partner.addr && <p>{partner.addr}</p>}
+            <div className="partner-foot"><span>DAEGU LOCAL</span><b>{partner.status === 'COMING_SOON' ? '러너 라운지 준비 중' : '완주 후 이용'} →</b></div>
           </div>
         </article>)}
         {partners.length === 0 && <div className="card empty-home">로컬 파트너 혜택을 준비하고 있어요.</div>}
       </div>
       <p className="benefit-note">러너스테이의 할인율은 제휴 확정 후 공개됩니다. 시연 혜택은 실제 사용 전 매장 확인이 필요해요.</p>
 
-      <div className="section-title"><h2>코스</h2><Link href="/courses/new">+ 직접 만들기</Link></div>
+      <div className="section-title editorial-title"><div><span className="section-kicker">DAEGU ROUTE EDIT</span><h2>토박이 러너의 대구 코스</h2></div><Link href="/courses/new">+ 내 코스 만들기</Link></div>
       <div className="course-list">
         {courses.map((c, i) => (
-          <div className="course" key={c.id}>
-            <div className={`thumb ${c.source === 'USER' ? 'user' : `t${i % 4}`}`}>{c.thumbnailUrl && <img src={mediaUrl(c.thumbnailUrl)} alt="" />}</div>
-            <div><h4>{c.name}</h4><p>{(c.distanceM / 1000).toFixed(1)}km · {c.difficulty} · {c.themes.join('/')}{best?.course.id === c.id ? ' · ' : ''}{best?.course.id === c.id && <b style={{ color: 'var(--blue)' }}>AI 추천</b>}</p></div>
-            <Link className="go" href={`/courses/${c.slug}`}>보기</Link>
-          </div>
+          <Link className="course editorial-course" href={`/courses/${c.slug}`} key={c.id}>
+            <div className={`thumb ${c.source === 'USER' ? 'user' : `t${i % 4}`}`}>
+              {c.thumbnailUrl && <img src={mediaUrl(c.thumbnailUrl)} alt="" />}
+              <span className="course-index">{String(i + 1).padStart(2, '0')}</span>
+              <span className="course-distance">{(c.distanceM / 1000).toFixed(1)}K</span>
+            </div>
+            <div className="course-copy">
+              <span className="course-area">{c.areaName || '대구광역시'} · {c.source === 'USER' ? '러너 제작' : '로컬 큐레이션'}</span>
+              <h4>{c.name}</h4>
+              <p className="course-description">{c.description || '대구의 시간과 풍경을 가장 가까이에서 만나는 러닝 코스예요.'}</p>
+              <div className="course-tags"><span>{c.difficulty}</span>{c.themes.slice(0, 2).map((theme) => <span key={theme}>{theme}</span>)}{best?.course.id === c.id && <b>AI PICK</b>}</div>
+            </div>
+            <span className="course-arrow" aria-hidden>→</span>
+          </Link>
         ))}
       </div>
       <p className="note">코스·관광지 데이터는 한국관광공사 TourAPI 4.0 형식으로 저장·갱신됩니다. LIVE 배지가 붙은 값은 지금 API에서 받아온 실데이터입니다.</p>
