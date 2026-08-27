@@ -11,6 +11,7 @@ runs.use('/runs', requireUser);
 
 const MAX_GPS_ACCURACY_M = 80;
 const MAX_GPS_POINT_AGE_MS = 2 * 60 * 1000;
+const MAX_BUFFERED_GPS_POINT_AGE_MS = 12 * 60 * 60 * 1000;
 const gpsPoint = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
@@ -66,6 +67,30 @@ runs.post('/runs', wrap(async (req, res) => {
   res.status(201).json({ run, course });
 }));
 
+// GET /api/runs/active?courseId=:idOrSlug — 새로고침/앱 복귀 시 진행 중 러닝 복구
+runs.get('/runs/active', wrap(async (req, res) => {
+  const courseId = z.string().optional().parse(req.query.courseId);
+  const active = await prisma.run.findFirst({
+    where: {
+      userId: req.user!.id,
+      status: 'ACTIVE',
+      startedAt: { gte: new Date(Date.now() - 12 * 60 * 60 * 1000) },
+      ...(courseId ? { course: { OR: [{ id: courseId }, { slug: courseId }] } } : {}),
+    },
+    orderBy: { startedAt: 'desc' },
+    include: {
+      course: {
+        include: {
+          checkpoints: { orderBy: { order: 'asc' } },
+          pois: { include: { poi: true }, orderBy: { distFromStartM: 'asc' } },
+        },
+      },
+      checkins: true,
+    },
+  });
+  res.json(active);
+}));
+
 // GET /api/runs/:id
 runs.get('/runs/:id', wrap(async (req, res) => {
   const run = await prisma.run.findFirst({ where: { id: String(req.params.id), userId: req.user!.id }, include: { course: { include: { checkpoints: { orderBy: { order: 'asc' } } } }, checkins: true, medals: { include: { medal: true } }, coupons: { include: { coupon: { include: { merchant: true } } } } } });
@@ -84,7 +109,7 @@ runs.post('/runs/:id/track', wrap(async (req, res) => {
   for (const p of body.points) {
     if (run.mode === 'LIVE') {
       if ((p.accuracy ?? Infinity) > MAX_GPS_ACCURACY_M) continue;
-      if (Math.abs(Date.now() - p.t) > MAX_GPS_POINT_AGE_MS) continue;
+      if (p.t < run.startedAt.getTime() - MAX_GPS_POINT_AGE_MS || p.t > Date.now() + MAX_GPS_POINT_AGE_MS || Date.now() - p.t > MAX_BUFFERED_GPS_POINT_AGE_MS) continue;
     }
     if (!prev) { track.push(p); prev = p; continue; }
     const dt = (p.t - prev.t) / 1000;
@@ -118,8 +143,11 @@ runs.post('/runs/:id/checkin', wrap(async (req, res) => {
   if (run.mode === 'LIVE') {
     if (body.method !== 'GPS') throw new HttpError(400, '실제 러닝은 GPS 체크인만 허용됩니다');
     const track = (Array.isArray(run.track) ? run.track as GpsPoint[] : []);
+    const proofTime = body.t ?? Date.now();
     proof = [...track].reverse().find((p) => {
-      if ((p.accuracy ?? Infinity) > MAX_GPS_ACCURACY_M || Date.now() - p.t > MAX_GPS_POINT_AGE_MS) return false;
+      if ((p.accuracy ?? Infinity) > MAX_GPS_ACCURACY_M) return false;
+      if (p.t < run.startedAt.getTime() - MAX_GPS_POINT_AGE_MS || p.t > Date.now() + MAX_GPS_POINT_AGE_MS || Date.now() - p.t > MAX_BUFFERED_GPS_POINT_AGE_MS) return false;
+      if (Math.abs(p.t - proofTime) > MAX_GPS_POINT_AGE_MS) return false;
       return haversine([p.lat, p.lng], [cp.lat, cp.lng]) <= cp.radiusM + Math.min(p.accuracy ?? 0, 30);
     }) ?? null;
     if (!proof) throw new HttpError(409, `GPS 궤적에서 '${cp.name}' 반경 통과가 확인되지 않았습니다`);
