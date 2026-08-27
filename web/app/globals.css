@@ -275,12 +275,12 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
 .home-course-visual em { position: absolute; z-index: 2; left: 9px; top: 9px; padding: 4px 7px; border-radius: 999px; background: var(--gold); color: var(--navy); font-size: 8px; font-style: normal; font-weight: 900; }
 .home-course-card > div:last-child { padding: 12px; }.home-course-card small { color: var(--blue); font-size: 8.5px; font-weight: 850; }.home-course-card h3 { overflow: hidden; margin: 5px 0 4px; font-size: 14px; letter-spacing: -.025em; text-overflow: ellipsis; white-space: nowrap; }.home-course-card p { margin: 0; color: var(--muted); font-size: 9.5px; }
 .home-local-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.home-local-card { overflow: hidden; border: 1px solid var(--line); border-radius: 19px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); }
+.home-local-card { overflow: hidden; contain: paint; border: 1px solid var(--line); border-radius: 19px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); }
 .home-local-image { height: 100px; overflow: hidden; display: grid; place-items: center; background: linear-gradient(145deg, #7FC5D8, #154B8B); color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .13em; line-height: 1.35; text-align: center; }
 .home-local-image img { width: 100%; height: 100%; object-fit: cover; }
 .home-local-card > div:last-child { padding: 12px; }.home-local-card small { color: var(--muted); font-size: 8.5px; font-weight: 750; }.home-local-card h3 { overflow: hidden; margin: 5px 0 4px; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }.home-local-card p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 28px; margin: 0; color: var(--muted); font-size: 9.5px; line-height: 1.45; }.home-local-card > div:last-child > b { display: block; margin-top: 10px; color: var(--blue); font-size: 9px; }
-.home-local-card.benefit { display: grid; grid-template-rows: 100px auto; background: linear-gradient(150deg, #EEF4FF, #fff 68%); border-color: #BDD0F8; }
-.home-partner-mark { display: grid; place-items: center; background: var(--navy); color: var(--gold); }.home-partner-mark svg { width: 48px; height: 48px; }.home-partner-mark img { width: 100%; height: 100%; object-fit: cover; }
+.home-local-card.benefit { display: grid; grid-template-rows: 100px minmax(0, auto); background: linear-gradient(150deg, #EEF4FF, #fff 68%); border-color: #BDD0F8; }
+.home-partner-mark { min-width: 0; min-height: 0; overflow: hidden; display: grid; place-items: center; background: var(--navy); color: var(--gold); }.home-partner-mark svg { width: 48px; height: 48px; }.home-partner-mark img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
 .home-banner-section { margin-top: 29px; }.home-section-head.compact { margin-bottom: 0; }.home-section-head.compact h2 { font-size: 16px; }.home-banner-section .banner-carousel { margin-top: 10px; box-shadow: 0 8px 20px rgba(10,29,82,.09); }
 
 /* 코스 탐색 · AI 추천 */
