@@ -54,7 +54,7 @@ export default function Home() {
     <section className="home-section home-program-section">
       <div className="home-section-head"><div><span>이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href="/programs">전체 일정</Link></div>
       {nextProgram ? <Link href="/programs" className="home-next-run">
-        <time dateTime={nextProgram.startsAt}><strong>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</strong><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
+        <time dateTime={nextProgram.startsAt} className={nextProgram.imageUrl ? 'with-photo' : ''}>{nextProgram.imageUrl && <img src={mediaUrl(nextProgram.imageUrl)} alt=""/>}<strong>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</strong><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
         <div className="home-next-run-copy"><div><span>{PROGRAM_KIND[nextProgram.kind]}</span><em>남은 자리 {nextProgram.remaining}</em></div><h3>{nextProgram.title}</h3><p>{nextProgram.place} · {nextProgram.host?.nickname || '대구 로컬 호스트'}</p></div>
         <span className="home-arrow" aria-hidden>→</span>
       </Link> : <div className="home-empty">다음 로컬 러닝을 준비하고 있어요.</div>}
@@ -77,7 +77,7 @@ export default function Home() {
     {(attraction || featuredPartner) && <section className="home-section">
       <div className="home-section-head"><div><span>코스 밖의 대구</span><h2>달린 뒤, 조금 더 머물기</h2></div></div>
       <div className="home-local-grid">
-        {attraction && <Link href="/spots" className="home-local-card spot"><div className="home-local-image">{attraction.firstImage ? <img src={attraction.firstImage} alt=""/> : <span>DAEGU<br/>LOCAL</span>}</div><div><small>러닝 가까이 만나는 장소</small><h3>{attraction.title}</h3><p>{attraction.dist != null ? `수성못에서 약 ${(attraction.dist / 1000).toFixed(1)}km` : attraction.addr1}</p><b>대구 장소 더 보기 →</b></div></Link>}
+        {attraction && <Link href="/spots" className="home-local-card spot"><div className="home-local-image"><img src={attraction.firstImage || '/images/local/suseong-lake-blue-run.jpg'} alt=""/></div><div><small>러닝 가까이 만나는 장소</small><h3>{attraction.title}</h3><p>{attraction.dist != null ? `수성못에서 약 ${(attraction.dist / 1000).toFixed(1)}km` : attraction.addr1}</p><b>대구 장소 더 보기 →</b></div></Link>}
         {featuredPartner && <Link href="/benefits" className="home-local-card benefit"><div className="home-partner-mark">{featuredPartner.imageUrl ? <img src={mediaUrl(featuredPartner.imageUrl)} alt=""/> : <PartnerGlyph/>}</div><div><small>{featuredPartner.category} · {featuredPartner.status === 'COMING_SOON' ? '제휴 준비 중' : '러너 혜택'}</small><h3>{featuredPartner.name}</h3><p>{featuredPartner.offerTitle}</p><b>완주 혜택 더 보기 →</b></div></Link>}
       </div>
     </section>}

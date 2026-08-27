@@ -37,7 +37,7 @@ async function main() {
   // ---------- 코스 ----------
   const courseDefs = [
     {
-      slug: 'suseong-blue-5k', name: '수성못 블루런 5K', difficulty: '초중급', themes: ['수변', '야경'], estMinutes: 32, elevationGainM: 12,
+      slug: 'suseong-blue-5k', name: '수성못 블루런 5K', thumbnailUrl: '/images/local/suseong-lake-blue-run.jpg', difficulty: '초중급', themes: ['수변', '야경'], estMinutes: 32, elevationGainM: 12,
       description: '수성못 두 바퀴 + 들안길 스퍼. 수변 데크에서 출발해 상화동산·음악분수를 지나 들안길 먹거리타운을 찍고 야경 피니시.',
       polyline: blue.pts, distanceM: Math.round(blue.total),
       checkpoints: [
@@ -50,17 +50,17 @@ async function main() {
       ],
     },
     {
-      slug: 'suseong-light-3k', name: '수성못 라이트 3K', difficulty: '초급', themes: ['수변'], estMinutes: 19, elevationGainM: 6,
+      slug: 'suseong-light-3k', name: '수성못 라이트 3K', thumbnailUrl: '/images/local/suseong-lake-blue-run.jpg', difficulty: '초급', themes: ['수변'], estMinutes: 19, elevationGainM: 6,
       description: '수성못 한 바퀴 반. 처음 달리는 사람을 위한 평지 코스.',
       polyline: dedupe([...arc(50, -310), ...arc(-310, -490).slice(1)]), distanceM: 0, checkpoints: null,
     },
     {
-      slug: 'deuran-food-7k', name: '들안길 미식 러닝 7K', difficulty: '중급', themes: ['미식', '야경'], estMinutes: 45, elevationGainM: 18,
+      slug: 'deuran-food-7k', name: '들안길 미식 러닝 7K', thumbnailUrl: '/images/local/deuran-food-night-run.jpg', difficulty: '중급', themes: ['미식', '야경'], estMinutes: 45, elevationGainM: 18,
       description: '수성못 세 바퀴 후 들안길 먹거리타운 왕복. 완주 쿠폰 2장.',
       polyline: dedupe([...arc(50, -310), ...arc(-310, -670).slice(1), ...arc(-670, -945).slice(1)]), distanceM: 0, checkpoints: null,
     },
     {
-      slug: 'modern-alley-10k', name: '근대로의 질주 10K', difficulty: '중급', themes: ['역사', '골목'], estMinutes: 63, elevationGainM: 55,
+      slug: 'modern-alley-10k', name: '근대로의 질주 10K', thumbnailUrl: '/images/local/modern-alley-morning-run.jpg', difficulty: '중급', themes: ['역사', '골목'], estMinutes: 63, elevationGainM: 55,
       description: '수성못에서 신천을 따라 근대골목까지. 청라언덕·계산성당·약령시·서문시장 체크인. (경로 검증 전 베타)',
       polyline: [[35.8300, 128.6190], [35.8420, 128.6105], [35.8560, 128.6010], [35.8650, 128.5950], [35.8688, 128.5875], [35.8683, 128.5870], [35.8693, 128.5887], [35.8695, 128.5814], [35.8660, 128.5900], [35.8560, 128.6010], [35.8420, 128.6105], [35.8300, 128.6190]] as LatLng[],
       distanceM: 0, checkpoints: null,
@@ -73,8 +73,8 @@ async function main() {
       : (() => { const out = [{ order: 0, name: '출발', kind: '출발', distM: 0, lat: pts[0][0], lng: pts[0][1], reward: false, dataSource: null as string | null }]; let n = 1; for (let d = 1000; d < total - 200; d += 1000) { const p = pointAt(pts, cum, d); out.push({ order: n++, name: `체크포인트 ${n - 1}`, kind: '러닝 구간', distM: d, lat: p[0], lng: p[1], reward: false, dataSource: null }); } out.push({ order: n, name: '피니시', kind: '피니시', distM: total, lat: pts[pts.length - 1][0], lng: pts[pts.length - 1][1], reward: true, dataSource: null }); return out; })();
     await prisma.course.upsert({
       where: { slug: c.slug },
-      create: { slug: c.slug, name: c.name, description: c.description, distanceM: total, difficulty: c.difficulty, themes: c.themes, startLat: pts[0][0], startLng: pts[0][1], polyline: pts, elevationGainM: c.elevationGainM, estMinutes: c.estMinutes, source: 'OFFICIAL', checkpoints: { create: cps } },
-      update: { name: c.name, description: c.description, distanceM: total, themes: c.themes, polyline: pts, estMinutes: c.estMinutes },
+      create: { slug: c.slug, name: c.name, description: c.description, thumbnailUrl: c.thumbnailUrl, distanceM: total, difficulty: c.difficulty, themes: c.themes, startLat: pts[0][0], startLng: pts[0][1], polyline: pts, elevationGainM: c.elevationGainM, estMinutes: c.estMinutes, source: 'OFFICIAL', checkpoints: { create: cps } },
+      update: { name: c.name, description: c.description, thumbnailUrl: c.thumbnailUrl, distanceM: total, themes: c.themes, polyline: pts, estMinutes: c.estMinutes },
     });
   }
   const blueCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'suseong-blue-5k' } });
@@ -159,8 +159,8 @@ async function main() {
   };
   await prisma.event.upsert({
     where: { slug: '3km-challenge' },
-    create: { slug: '3km-challenge', title: '로컬 스트라이드 3KM CHALLENGE', description: '수성못 3km 러닝 챌린지. 라이브 랭킹 전광판·MY RECORD 카드 제공. (날짜는 확정 후 수정)', courseId: lightCourse.id, startsAt: nextAt(31, 8), capacity: 200, feeKrw: 0, tshirt: true, status: 'OPEN' },
-    update: {},
+    create: { slug: '3km-challenge', title: '로컬 스트라이드 3KM CHALLENGE', description: '수성못 3km 러닝 챌린지. 라이브 랭킹 전광판·MY RECORD 카드 제공. (날짜는 확정 후 수정)', imageUrl: '/images/local/suseong-lake-blue-run.jpg', courseId: lightCourse.id, startsAt: nextAt(31, 8), capacity: 200, feeKrw: 0, tshirt: true, status: 'OPEN' },
+    update: { imageUrl: '/images/local/suseong-lake-blue-run.jpg' },
   });
 
   const demoRunnerDefs = [
@@ -182,28 +182,28 @@ async function main() {
     update: { nickname: runner.nickname, avatarColor: runner.avatarColor, bio: runner.bio, homeArea: runner.homeArea, preferredPaceSec: runner.preferredPaceSec },
   }));
   const programDefs = [
-    { slug: 'suseong-morning-run', title: '수성못 모닝 블루런', description: '대구 로컬 호스트와 수성못의 아침을 여는 초보 환영 3K 러닝입니다.', kind: 'MORNING' as const, place: '수성못 수변 데크', paceSec: 420, courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), capacity: 12, feeKrw: 0 },
-    { slug: 'deuran-after-work-run', title: '들안길 퇴근 미식런', description: '퇴근 후 수성못에서 출발해 들안길의 야경과 로컬 미식 거리를 만나는 7K 러닝입니다.', kind: 'AFTER_WORK' as const, place: '수성못 상화동산 입구', paceSec: 390, courseId: foodCourse.id, startsAt: nextAt(4, 19, 30), capacity: 10, feeKrw: 5000 },
-    { slug: 'daegu-independent-theme-run', title: '대구 골목 독립런', description: '근대골목의 이야기를 따라 달리는 월간 주제형 러닝. 혼자 와도 로컬 러너와 함께 시작합니다.', kind: 'THEME' as const, place: '청라언덕 선교사 주택 앞', paceSec: 420, courseId: modernCourse.id, startsAt: nextAt(8, 9), capacity: 16, feeKrw: 10000 },
+    { slug: 'suseong-morning-run', title: '수성못 모닝 블루런', description: '대구 로컬 호스트와 수성못의 아침을 여는 초보 환영 3K 러닝입니다.', imageUrl: '/images/local/suseong-lake-blue-run.jpg', kind: 'MORNING' as const, place: '수성못 수변 데크', paceSec: 420, courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), capacity: 12, feeKrw: 0 },
+    { slug: 'deuran-after-work-run', title: '들안길 퇴근 미식런', description: '퇴근 후 수성못에서 출발해 들안길의 야경과 로컬 미식 거리를 만나는 7K 러닝입니다.', imageUrl: '/images/local/deuran-food-night-run.jpg', kind: 'AFTER_WORK' as const, place: '수성못 상화동산 입구', paceSec: 390, courseId: foodCourse.id, startsAt: nextAt(4, 19, 30), capacity: 10, feeKrw: 5000 },
+    { slug: 'daegu-independent-theme-run', title: '대구 골목 독립런', description: '근대골목의 이야기를 따라 달리는 월간 주제형 러닝. 혼자 와도 로컬 러너와 함께 시작합니다.', imageUrl: '/images/local/modern-alley-morning-run.jpg', kind: 'THEME' as const, place: '청라언덕 선교사 주택 앞', paceSec: 420, courseId: modernCourse.id, startsAt: nextAt(8, 9), capacity: 16, feeKrw: 10000 },
   ];
   for (const program of programDefs) await prisma.event.upsert({
     where: { slug: program.slug },
     create: { ...program, hostId: ops.id, status: 'OPEN', tshirt: false },
-    update: {},
+    update: { imageUrl: program.imageUrl },
   });
 
   const raceDefs = [
-    { slug: 'suseong-sunset-5k-preview', title: '수성못 선셋 5K · PREVIEW', description: '[MVP 시범 대회] 수성못의 노을과 음악분수를 지나는 초보 환영 런. 실제 일정과 혜택은 운영 확정 후 공개됩니다.', place: '수성못 상화동산 입구', courseId: blueCourse.id, startsAt: nextAt(17, 18, 30), capacity: 180, feeKrw: 12000, tshirt: true, entrants: [0, 1, 2, 7, 8, 9] },
-    { slug: 'deuran-night-7k-preview', title: '들안길 나이트 7K · PREVIEW', description: '[MVP 시범 대회] 수성못에서 출발해 들안길 로컬 상권과 연결하는 야경 런. 제휴 쿠폰은 시범 운영 후 확정합니다.', place: '수성못 두산오거리 광장', courseId: foodCourse.id, startsAt: nextAt(24, 19, 30), capacity: 120, feeKrw: 18000, tshirt: false, entrants: [1, 2, 4, 5, 7, 9] },
-    { slug: 'daegu-alley-10k-preview', title: '대구 골목 10K · PREVIEW', description: '[MVP 시범 대회] 청라언덕·계산성당·약령시를 이야기로 잇는 대구 로컬 히스토리 런. 코스 안전 검증 후 정식 오픈합니다.', place: '청라언덕 선교사 주택 앞', courseId: modernCourse.id, startsAt: nextAt(38, 8, 30), capacity: 250, feeKrw: 25000, tshirt: true, entrants: [0, 2, 3, 5, 6, 9] },
-    { slug: 'suseong-family-3k-preview', title: '수성못 패밀리 3K · PREVIEW', description: '[MVP 시범 대회] 첫 러너와 가족이 함께 달리는 수성못 평지 코스. 행사 신고·안전 요원 확보 후 정식 접수합니다.', place: '수성못 수변 데크', courseId: lightCourse.id, startsAt: nextAt(45, 9), capacity: 100, feeKrw: 5000, tshirt: false, entrants: [3, 4, 7, 8] },
+    { slug: 'suseong-sunset-5k-preview', title: '수성못 선셋 5K · PREVIEW', description: '[MVP 시범 대회] 수성못의 노을과 음악분수를 지나는 초보 환영 런. 실제 일정과 혜택은 운영 확정 후 공개됩니다.', imageUrl: '/images/local/suseong-lake-blue-run.jpg', place: '수성못 상화동산 입구', courseId: blueCourse.id, startsAt: nextAt(17, 18, 30), capacity: 180, feeKrw: 12000, tshirt: true, entrants: [0, 1, 2, 7, 8, 9] },
+    { slug: 'deuran-night-7k-preview', title: '들안길 나이트 7K · PREVIEW', description: '[MVP 시범 대회] 수성못에서 출발해 들안길 로컬 상권과 연결하는 야경 런. 제휴 쿠폰은 시범 운영 후 확정합니다.', imageUrl: '/images/local/deuran-food-night-run.jpg', place: '수성못 두산오거리 광장', courseId: foodCourse.id, startsAt: nextAt(24, 19, 30), capacity: 120, feeKrw: 18000, tshirt: false, entrants: [1, 2, 4, 5, 7, 9] },
+    { slug: 'daegu-alley-10k-preview', title: '대구 골목 10K · PREVIEW', description: '[MVP 시범 대회] 청라언덕·계산성당·약령시를 이야기로 잇는 대구 로컬 히스토리 런. 코스 안전 검증 후 정식 오픈합니다.', imageUrl: '/images/local/modern-alley-morning-run.jpg', place: '청라언덕 선교사 주택 앞', courseId: modernCourse.id, startsAt: nextAt(38, 8, 30), capacity: 250, feeKrw: 25000, tshirt: true, entrants: [0, 2, 3, 5, 6, 9] },
+    { slug: 'suseong-family-3k-preview', title: '수성못 패밀리 3K · PREVIEW', description: '[MVP 시범 대회] 첫 러너와 가족이 함께 달리는 수성못 평지 코스. 행사 신고·안전 요원 확보 후 정식 접수합니다.', imageUrl: '/images/local/suseong-lake-blue-run.jpg', place: '수성못 수변 데크', courseId: lightCourse.id, startsAt: nextAt(45, 9), capacity: 100, feeKrw: 5000, tshirt: false, entrants: [3, 4, 7, 8] },
   ];
   for (const race of raceDefs) {
     const { entrants, ...data } = race;
     const event = await prisma.event.upsert({
       where: { slug: race.slug },
       create: { ...data, kind: 'RACE', hostId: ops.id, status: 'OPEN' },
-      update: {},
+      update: { imageUrl: data.imageUrl },
     });
     for (let entrantIndex = 0; entrantIndex < entrants.length; entrantIndex += 1) {
       const runner = demoRunners[entrants[entrantIndex]];

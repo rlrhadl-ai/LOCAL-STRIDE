@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
-import { api } from '@/lib/api';
+import { api, mediaUrl } from '@/lib/api';
 
 interface EventItem {
   id: string;
@@ -15,6 +15,7 @@ interface EventItem {
   feeKrw: number;
   tshirt: boolean;
   status: string;
+  imageUrl: string | null;
   registered: boolean;
   course: { name: string; distanceM: number } | null;
   _count: { registrations: number };
@@ -48,25 +49,30 @@ export default function EventsPage() {
           const dDay = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
           return (
             <Link key={event.id} href={`/events/${event.slug}`} className="race-card">
-              <div className={`race-date tone-${index % 4}`}><span>{date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</span><b>{date.getDate()}</b><small>{date.toLocaleDateString('ko-KR', { weekday: 'short' })}</small></div>
-              <div className="race-main">
-                <div className="race-tags">
-                  <span className={`tag ${event.status === 'OPEN' ? 'green' : ''}`}>{event.status === 'OPEN' ? '접수 중' : event.status}</span>
-                  {isPreview(event) && <span className="tag gold">시범 대회</span>}
-                  {event.registered && <span className="tag">참가 등록됨</span>}
-                  <span className="race-dday">D-{dDay}</span>
-                </div>
-                <h3>{cleanTitle(event.title)}</h3>
-                <p className="race-copy">{cleanDescription(event.description)}</p>
-                <dl className="race-facts">
-                  <div><dt>코스</dt><dd>{event.course ? `${event.course.name} · ${(event.course.distanceM / 1000).toFixed(1)}K` : '확정 예정'}</dd></div>
-                  <div><dt>일시</dt><dd>{date.toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</dd></div>
-                  <div><dt>장소</dt><dd>{event.place ?? '공지 예정'}</dd></div>
-                </dl>
-                <div className="race-capacity"><span><b>{event._count.registrations}명</b> 참가 표시 · {remaining}자리 남음</span><strong>{event.feeKrw ? `${event.feeKrw.toLocaleString()}원` : '무료'}</strong></div>
-                <div className="race-progress" aria-label={`정원 ${event.capacity}명 중 ${event._count.registrations}명`}><i style={{ width: `${progress}%` }} /></div>
+              <div className={`race-cover tone-${index % 4}`}>
+                {event.imageUrl && <img src={mediaUrl(event.imageUrl)} alt="" />}
+                <div className="race-date"><span>{date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</span><b>{date.getDate()}</b><small>{date.toLocaleDateString('ko-KR', { weekday: 'short' })}</small></div>
+                <span className="race-cover-dday">D-{dDay}</span>
               </div>
-              <span className="community-arrow" aria-hidden="true">→</span>
+              <div className="race-card-body">
+                <div className="race-main">
+                  <div className="race-tags">
+                    <span className={`tag ${event.status === 'OPEN' ? 'green' : ''}`}>{event.status === 'OPEN' ? '접수 중' : event.status}</span>
+                    {isPreview(event) && <span className="tag gold">시범 대회</span>}
+                    {event.registered && <span className="tag">참가 등록됨</span>}
+                  </div>
+                  <h3>{cleanTitle(event.title)}</h3>
+                  <p className="race-copy">{cleanDescription(event.description)}</p>
+                  <dl className="race-facts">
+                    <div><dt>코스</dt><dd>{event.course ? `${event.course.name} · ${(event.course.distanceM / 1000).toFixed(1)}K` : '확정 예정'}</dd></div>
+                    <div><dt>일시</dt><dd>{date.toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</dd></div>
+                    <div><dt>장소</dt><dd>{event.place ?? '공지 예정'}</dd></div>
+                  </dl>
+                  <div className="race-capacity"><span><b>{event._count.registrations}명</b> 참가 표시 · {remaining}자리 남음</span><strong>{event.feeKrw ? `${event.feeKrw.toLocaleString()}원` : '무료'}</strong></div>
+                  <div className="race-progress" aria-label={`정원 ${event.capacity}명 중 ${event._count.registrations}명`}><i style={{ width: `${progress}%` }} /></div>
+                </div>
+                <span className="community-arrow" aria-hidden="true">→</span>
+              </div>
             </Link>
           );
         })}

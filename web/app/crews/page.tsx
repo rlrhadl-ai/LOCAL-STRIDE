@@ -22,6 +22,12 @@ interface Crew {
 const LIFESTYLES = ['전체', '아침', '저녁', '주말', '초보환영', '직장인'];
 const isPreview = (crew: Crew) => crew.description.includes('시범 크루');
 const cleanDescription = (value: string) => value.replace(/^\[MVP 시범 크루\]\s*/, '');
+const crewImage = (name: string) => {
+  if (name.includes('앞산')) return '/images/local/apsan-trail-run.jpg';
+  if (name.includes('신천') || name.includes('금호강')) return '/images/local/sincheon-riverside-run.jpg';
+  if (name.includes('달서') || name.includes('수성못')) return '/images/local/suseong-lake-blue-run.jpg';
+  return '/images/local/modern-alley-morning-run.jpg';
+};
 
 export default function CrewsPage() {
   const [lifestyle, setLifestyle] = useState('전체');
@@ -67,7 +73,7 @@ export default function CrewsPage() {
           const run = crew.runs[0];
           return (
             <Link key={crew.id} href={`/crews/${crew.id}`} className="community-card">
-              <div className={`community-mark tone-${index % 4}`} aria-hidden="true">{crew.name.slice(0, 1)}</div>
+              <div className={`community-mark tone-${index % 4}`} aria-hidden="true"><img src={crewImage(crew.name)} alt="" /></div>
               <div className="community-card-main">
                 <div className="community-card-tags">
                   {isPreview(crew) && <span className="tag gold">시범 크루</span>}

@@ -21,6 +21,13 @@ const progressText = (mission: Mission) => mission.type === 'PERIOD_DISTANCE'
   ? (mission.progress.value / 1000).toFixed(1) + ' / ' + (missionTarget(mission) / 1000).toFixed(0) + 'km'
   : Math.min(mission.progress.value, missionTarget(mission)) + ' / ' + missionTarget(mission) + '회';
 const missionIcon = (mission: Mission) => mission.reward?.type === 'LOCAL_CURRENCY' ? '₩' : mission.type === 'MIRACLE_RUN' ? '☀' : mission.type === 'LOCAL_FOOD' ? 'L' : mission.type === 'CHECKIN' ? '✓' : 'K';
+const missionImage = (mission: Mission) => {
+  if (mission.reward?.type === 'LOCAL_CURRENCY') return '/images/local/local-reward-checkin.jpg';
+  if (mission.code === 'LOCAL-FOOD-1') return '/images/local/deuran-food-night-run.jpg';
+  if (mission.code === 'BLUE-CHECKIN') return '/images/local/suseong-lake-blue-run.jpg';
+  if (mission.type === 'MIRACLE_RUN') return '/images/local/sincheon-riverside-run.jpg';
+  return '/images/local/apsan-trail-run.jpg';
+};
 
 export default function MissionsPage() {
   const [missions, setMissions] = useState<Mission[]>([]);
@@ -81,8 +88,11 @@ export default function MissionsPage() {
         const localPay = mission.reward?.type === 'LOCAL_CURRENCY';
         return (
           <article key={mission.id} className={'mission-rich ' + (mission.progress.done ? 'done ' : '') + (localPay ? 'local-pay' : '')}>
-            <div className="mission-rich-top">
+            <div className="mission-rich-cover" aria-hidden="true">
+              <img src={missionImage(mission)} alt="" />
               <span className="mission-rich-icon">{mission.progress.done ? '✓' : missionIcon(mission)}</span>
+            </div>
+            <div className="mission-rich-top">
               <div><div className="mission-rich-tags">{localPay && <span className="tag gold">지역화폐</span>}{mission.reward?.status === 'DEMO' && <span className="tag">시범 리워드</span>}</div><h3>{mission.title}</h3><p>{mission.description}</p></div>
             </div>
             <div className="mission-progress-line"><span>{progressText(mission)}</span><b>{Math.round(percent)}%</b></div>
