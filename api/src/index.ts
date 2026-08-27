@@ -20,6 +20,7 @@ import { mates } from './routes/mates';
 import { rankings } from './routes/rankings';
 import { me } from './routes/me';
 import { ai } from './routes/ai';
+import { partners } from './routes/partners';
 import { attachLive } from './live/ranking';
 
 const app = express();
@@ -34,7 +35,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(deviceAuth);
 
 app.get('/', (_req, res) => res.json({ name: 'LOCAL STRIDE API', docs: '/api/health' }));
-app.use('/api', health, tour, weather, courses, recommend, runs, missions, crews, events, mates, rankings, me, ai);
+app.use('/api', health, tour, weather, courses, recommend, runs, missions, crews, events, mates, rankings, me, ai, partners);
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 app.use(errorHandler);
 
