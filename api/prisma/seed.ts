@@ -138,7 +138,10 @@ async function main() {
   const lightCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'suseong-light-3k' } });
   const foodCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'deuran-food-7k' } });
   const modernCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'modern-alley-10k' } });
-  const nextAt = (days: number, hour: number, minute = 0) => { const date = new Date(now.getTime() + days * 86400000); date.setHours(hour, minute, 0, 0); return date; };
+  const nextAt = (days: number, hour: number, minute = 0) => {
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60_000);
+    return new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate() + days, hour - 9, minute, 0));
+  };
   const programDefs = [
     { slug: 'suseong-morning-run', title: '수성못 모닝 블루런', description: '대구 로컬 호스트와 수성못의 아침을 여는 초보 환영 3K 러닝입니다.', kind: 'MORNING' as const, place: '수성못 수변 데크', paceSec: 420, courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), capacity: 12, feeKrw: 0 },
     { slug: 'deuran-after-work-run', title: '들안길 퇴근 미식런', description: '퇴근 후 수성못에서 출발해 들안길의 야경과 로컬 미식 거리를 만나는 7K 러닝입니다.', kind: 'AFTER_WORK' as const, place: '수성못 상화동산 입구', paceSec: 390, courseId: foodCourse.id, startsAt: nextAt(4, 19, 30), capacity: 10, feeKrw: 5000 },
