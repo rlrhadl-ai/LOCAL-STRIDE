@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import AgentLog from '@/components/AgentLog';
@@ -19,7 +19,13 @@ export default function RunPage() {
   const [question, setQ] = useState('');
   const [asking, setAsking] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
-  const { s, start, togglePause, finish, closePush, log } = useRunEngine(course, 'LIVE', 1);
+  const { s, start, togglePause, finish, reconnectGps, closePush, log } = useRunEngine(course, 'LIVE', 1);
+
+  const requestFinish = useCallback(() => {
+    const pending = s.pendingPoints + s.pendingCheckins;
+    const message = `완주 인증을 요청할까요?\n\n현재 ${(s.progress / 1000).toFixed(2)}km · 체크포인트 ${s.checkedIn.size}/${course?.checkpoints?.length ?? 0}${pending ? `\n전송 대기 기록 ${pending}건은 먼저 동기화합니다.` : ''}\n조건이 부족하면 러닝 기록은 계속됩니다.`;
+    if (window.confirm(message)) void finish();
+  }, [course?.checkpoints?.length, finish, s.checkedIn.size, s.pendingCheckins, s.pendingPoints, s.progress]);
 
   useEffect(() => { api.get<Course>(`/courses/${courseId}`).then(setCourse).catch(() => setCourse(null)); }, [courseId]);
   useEffect(() => { if (s.status === 'finished' && s.runId) router.push(`/finish/${s.runId}`); }, [s.status, s.runId, router]);
@@ -27,13 +33,13 @@ export default function RunPage() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input, textarea')) return;
       if (e.key === ' ') { e.preventDefault(); ['idle', 'error'].includes(s.status) ? begin() : togglePause(); }
-      else if (e.key === 'f' || e.key === 'F') void finish();
+      else if (e.key === 'f' || e.key === 'F') requestFinish();
       else if (e.key === 'm' || e.key === 'M') toggleVoice();
     };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   });
 
-  const begin = () => { if (s.status === 'starting' || s.status === 'running') return; void start(); };
+  const begin = () => { if (s.status === 'recovering' || s.status === 'starting' || s.status === 'running') return; void start(); };
   const toggleVoice = () => { const v = !voiceOn(); setVoice(v); setV(v); };
   const cps = course?.checkpoints ?? [];
   const nextCp = cps[Math.min(s.nextCp, cps.length - 1)];
@@ -65,6 +71,9 @@ export default function RunPage() {
         <RunMap route={course.polyline} done={s.done} checkpoints={cps} cpState={cpState} runner={s.runner ?? course.polyline[0]} pois={s.pois} follow />
         <div className="map-chip">
           <span className="live-badge"><i />실제 GPS{s.gpsAccuracyM != null ? ` ±${s.gpsAccuracyM}m` : ''}</span>
+          {s.wakeLockActive && <span className="live-badge"><i />화면 유지</span>}
+          {s.offline && <span className="live-badge" style={{ color: 'var(--red)' }}>오프라인 저장</span>}
+          {(s.pendingPoints > 0 || s.pendingCheckins > 0) && <span className="live-badge">전송 대기 {s.pendingPoints + s.pendingCheckins}</span>}
           {s.nearbySource && <button type="button" style={{ all: 'unset', cursor: 'pointer' }} onClick={() => setShowRaw((v) => !v)}><LiveBadge source={s.nearbySource} ms={s.nearbyMs ?? undefined} label="TourAPI" /></button>}
         </div>
         {s.push && (
@@ -80,24 +89,24 @@ export default function RunPage() {
             <button className="x" type="button" aria-label="닫기" onClick={closePush}>×</button>
           </div>
         )}
-        {s.gpsNote && <div className="gps-banner"><span>{s.gpsNote}</span><button type="button" onClick={() => location.reload()}>다시 시작</button></div>}
+        {s.gpsNote && <div className="gps-banner"><span>{s.gpsNote}</span>{s.gpsInterrupted && <button type="button" onClick={reconnectGps}>GPS 재연결</button>}</div>}
         {showRaw && s.lastRaw != null && <div className="data-panel" style={{ position: 'absolute', zIndex: 760, left: 10, right: 10, bottom: 10 }}>{JSON.stringify(s.lastRaw, null, 1).slice(0, 900)}</div>}
       </div>
       <div className="run-bottom">
         <div className="next-card">
           <div className="row"><div><div className="lbl">{s.nextCp >= cps.length - 1 ? '피니시까지' : '다음 체크포인트까지'}</div><div className="name">{nextCp?.name ?? '-'}</div></div><div className="dist">{nextDist.toLocaleString('ko-KR')}m</div></div>
           <div className="cps">{cps.map((_, i) => <i key={i} className={cpState(i)} />)}</div>
-          {s.status === 'idle' || s.status === 'starting' || s.status === 'error' ? (
+          {s.status === 'idle' || s.status === 'recovering' || s.status === 'starting' || s.status === 'error' ? (
             <div className="stack">
               {s.error && <div style={{ color: 'var(--red)', fontSize: 12.5 }}>{s.error}</div>}
-              <button className="btn" type="button" disabled={s.status === 'starting'} onClick={begin}>{s.status === 'starting' ? 'GPS 확인 중…' : `GPS 확인 후 ${course.name} 시작`}</button>
+              <button className="btn" type="button" disabled={s.status === 'recovering' || s.status === 'starting'} onClick={begin}>{s.status === 'recovering' ? '진행 중 러닝 확인 중…' : s.status === 'starting' ? 'GPS 확인 중…' : `GPS 확인 후 ${course.name} 시작`}</button>
               <p className="note" style={{ marginTop: 0 }}>코스 출발점에서 위치 권한을 허용해 주세요. 정확도 80m 이내의 실제 GPS만 기록하며, 모든 체크포인트와 코스 거리의 80% 이상이 서버에서 확인되어야 완주됩니다.</p>
             </div>
           ) : (
             <div className="run-ctl">
               <button className={`round voice ${voice ? 'on' : ''}`} type="button" aria-pressed={voice} aria-label="음성 가이드" onClick={toggleVoice}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" /></svg></button>
               <button className="big" type="button" aria-label={s.status === 'paused' ? '재개' : '일시정지'} onClick={togglePause}>{s.status === 'paused' ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l11-7z" /></svg> : <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>}</button>
-              <button className="round stop" type="button" aria-label="완주 확인" onClick={() => void finish()}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button>
+              <button className="round stop" type="button" aria-label="완주 확인" disabled={s.status === 'finishing'} onClick={requestFinish}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button>
             </div>
           )}
         </div>
