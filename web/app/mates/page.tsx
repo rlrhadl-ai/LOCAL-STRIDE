@@ -23,7 +23,7 @@ export default function MatesPage() {
   return (
     <main className="page community-page">
       <AppHeader back title="러닝 메이트" right={<button className="btn sm" type="button" onClick={() => setOpen((value) => !value)}>{open ? '닫기' : '+ 모집'}</button>} />
-      <section className="mate-hero"><span className="community-eyebrow">RUN TOGETHER, TODAY</span><h2>내 페이스와 시간에 맞는<br />대구 러너를 찾아보세요.</h2><p>가병게 같이 달리거나, 목표 페이스를 이끌어 줄 러너를 모집해 보세요.</p></section>
+      <section className="mate-hero"><span className="community-eyebrow">RUN TOGETHER, TODAY</span><h2>내 페이스와 시간에 맞는<br />대구 러너를 찾아보세요.</h2><p>가볍게 같이 달리거나, 목표 페이스를 이끌어 줄 러너를 모집해 보세요.</p></section>
       <div className="pills community-filters mate-filters">{([['', '전체'], ['PACEMAKER', '페이스메이커'], ['MATE', '러닝 메이트']] as const).map(([value, label]) => <button key={value} type="button" className={`pill ${type === value ? 'on' : ''}`} onClick={() => setType(value)}>{label}</button>)}</div>
 
       {open && <section className="card mate-form stack">

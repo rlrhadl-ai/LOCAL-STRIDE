@@ -149,7 +149,7 @@ async function main() {
   const demoRunnerDefs = [
     { deviceId: 'seed-community-dawn', nickname: '새벽물결', avatarColor: '#2F6FED', bio: '수성못 새벽 공기를 좋아해요.', homeArea: '대구 수성구', preferredPaceSec: 410 },
     { deviceId: 'seed-community-deuran', nickname: '들안길토끼', avatarColor: '#F28C28', bio: '퇴근 후 미식런을 즐기는 직장인 러너예요.', homeArea: '대구 수성구', preferredPaceSec: 380 },
-    { deviceId: 'seed-community-sincheon', nickname: '신천바람', avatarColor: '#14A38B', bio: '신천 야경과 함께 가병게 달립니다.', homeArea: '대구 남구', preferredPaceSec: 360 },
+    { deviceId: 'seed-community-sincheon', nickname: '신천바람', avatarColor: '#14A38B', bio: '신천 야경과 함께 가볍게 달립니다.', homeArea: '대구 남구', preferredPaceSec: 360 },
     { deviceId: 'seed-community-apsan', nickname: '앞산호흡', avatarColor: '#6B53D5', bio: '주말에는 앞산 트레일, 평일에는 시내 조깅.', homeArea: '대구 남구', preferredPaceSec: 430 },
     { deviceId: 'seed-community-dalseo', nickname: '달서페이스', avatarColor: '#E4556C', bio: '천천히 길게 달리는 것을 좋아해요.', homeArea: '대구 달서구', preferredPaceSec: 450 },
     { deviceId: 'seed-community-cheongna', nickname: '청라러너', avatarColor: '#D69A13', bio: '대구 골목의 이야기를 찾아 달립니다.', homeArea: '대구 중구', preferredPaceSec: 400 },
@@ -224,7 +224,7 @@ async function main() {
 
   const mateDefs = [
     { authorIndex: 0, type: 'PACEMAKER' as const, paceSec: 410, meetAt: nextAt(2, 6, 30), place: '수성못 상화동산 입구', slots: 5, body: '[시범 모집] 첫 5K 완주를 위한 6\'50\" 안정 페이싱', applicants: [7, 8] },
-    { authorIndex: 1, type: 'MATE' as const, paceSec: 385, meetAt: nextAt(3, 19, 30), place: '들안길 두산오거리', slots: 4, body: '[시범 모집] 퇴근 후 6K 달리고 로컬 식당에서 가병게 식사해요', applicants: [2, 9] },
+    { authorIndex: 1, type: 'MATE' as const, paceSec: 385, meetAt: nextAt(3, 19, 30), place: '들안길 두산오거리', slots: 4, body: '[시범 모집] 퇴근 후 6K 달리고 로컬 식당에서 가볍게 식사해요', applicants: [2, 9] },
     { authorIndex: 2, type: 'PACEMAKER' as const, paceSec: 360, meetAt: nextAt(4, 20), place: '신천 수성교 하부', slots: 6, body: '[시범 모집] 신천 야경 7K, 6\'00\" 페이스를 맞춰드려요', applicants: [1, 5, 7] },
     { authorIndex: 3, type: 'MATE' as const, paceSec: 480, meetAt: nextAt(5, 8), place: '앞산빨래터 입구', slots: 5, body: '[시범 모집] 러닝과 등산 사이, 안전하게 새벽 트레일 함께해요', applicants: [4, 6] },
     { authorIndex: 4, type: 'MATE' as const, paceSec: 450, meetAt: nextAt(4, 20), place: '월광수변공원 정문', slots: 4, body: '[시범 모집] 대화 가능한 7\'30\" 페이스로 4K 조깅해요', applicants: [8] },
