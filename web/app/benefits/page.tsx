@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api, mediaUrl } from '@/lib/api';
 import type { PartnerOffer } from '@/lib/types';
@@ -17,10 +18,14 @@ export default function BenefitsPage() {
     <AppHeader back title="러너 혜택"/>
     <section className="local-content-intro benefit"><span>RUN · RECOVER · LOCAL</span><h1>잘 달린 하루의 끝을<br/>대구에서 누려보세요.</h1><p>LOCAL STRIDE 러너를 반기는 웰니스 공간과 로컬 매장을 소개합니다.</p></section>
     <div className="local-content-head"><h2>완주 후 쉬어가기</h2><span>{items.length}개의 로컬 파트너</span></div>
-    <div className="benefit-page-list">{items.map((partner) => <article className={`benefit-page-card ${partner.status === 'COMING_SOON' ? 'featured' : ''}`} key={partner.id}>
-      <div className="benefit-page-icon">{partner.imageUrl ? <img src={mediaUrl(partner.imageUrl)} alt=""/> : <BenefitIcon category={partner.category}/>}</div>
-      <div><div className="benefit-page-meta"><span>{partner.category}</span><em>{partner.status === 'ACTIVE' ? '완주 혜택' : partner.status === 'COMING_SOON' ? '제휴 준비 중' : '시연 혜택'}</em></div><h2>{partner.name}</h2><strong>{partner.offerTitle}</strong>{partner.addr && <address>{partner.addr}</address>}<p>{partner.status === 'COMING_SOON' ? '제휴 내용이 확정되면 LOCAL STRIDE에서 가장 먼저 알려드릴게요.' : '실제 이용 전 매장에 혜택 적용 여부를 확인해 주세요.'}</p></div>
-    </article>)}</div>
+    <div className="benefit-page-list">{items.map((partner) => {
+      const runnerDay = partner.name === '러너스데이';
+      return <article className={`benefit-page-card ${partner.status === 'COMING_SOON' ? 'featured' : ''} ${runnerDay ? 'coupon-card' : ''}`} key={partner.id}>
+        <div className="benefit-page-icon">{partner.imageUrl ? <img src={mediaUrl(partner.imageUrl)} alt=""/> : <BenefitIcon category={partner.category}/>}</div>
+        <div><div className="benefit-page-meta"><span>{partner.category}</span><em>{runnerDay ? '데모 쿠폰' : partner.status === 'ACTIVE' ? '완주 혜택' : partner.status === 'COMING_SOON' ? '제휴 준비 중' : '시연 혜택'}</em></div><h2>{partner.name}</h2><strong>{partner.offerTitle}</strong>{partner.addr && <address>{partner.addr}</address>}<p>{runnerDay ? '발표와 서비스 시연을 위한 가상 쿠폰입니다. 실제 매장에서는 사용할 수 없어요.' : partner.status === 'COMING_SOON' ? '제휴 내용이 확정되면 LOCAL STRIDE에서 가장 먼저 알려드릴게요.' : '실제 이용 전 매장에 혜택 적용 여부를 확인해 주세요.'}</p></div>
+        {runnerDay && <div className="benefit-coupon-strip"><span><small>RUNNER&apos;S DAY · DEMO</small><b>5,000원 할인</b></span><Link href="/me">내 지갑에서 보기 →</Link></div>}
+      </article>;
+    })}</div>
     {!loading && items.length === 0 && <div className="empty">새로운 러너 혜택을 준비하고 있어요.</div>}
   </main>;
 }

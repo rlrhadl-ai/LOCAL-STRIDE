@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { wrap } from '../middleware/error';
@@ -10,6 +11,11 @@ me.use('/me', requireUser);
 // GET /api/me — 프로필 + 통계 + 쿠폰 + 메달
 me.get('/me', wrap(async (req, res) => {
   const uid = req.user!.id;
+  const demoCoupon = await prisma.coupon.findFirst({ where: { title: '러너스데이 완주 리커버리 5,000원 데모 쿠폰', validUntil: { gte: new Date() } }, select: { id: true } });
+  if (demoCoupon) {
+    const demoCode = `DEMO-RD-${createHash('sha256').update(uid).digest('hex').slice(0, 8).toUpperCase()}`;
+    await prisma.userCoupon.upsert({ where: { code: demoCode }, create: { userId: uid, couponId: demoCoupon.id, code: demoCode }, update: {} });
+  }
   const [user, agg, courses, medals, coupons, challenges, crews] = await Promise.all([
     prisma.user.findUnique({ where: { id: uid }, select: { id: true, email: true, role: true, nickname: true, avatarColor: true, avatarUrl: true, bio: true, homeArea: true, weeklyGoalKm: true, preferredPaceSec: true, phoneVerified: true, kakaoId: true, createdAt: true } }),
     prisma.run.aggregate({ _sum: { distanceM: true, durationSec: true }, _count: { _all: true }, where: { userId: uid, status: 'FINISHED', valid: true } }),

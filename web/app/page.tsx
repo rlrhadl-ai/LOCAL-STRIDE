@@ -38,7 +38,7 @@ export default function Home() {
   const bestCourse = best ? courses.find((course) => course.id === best.id) : null;
   const featuredCourses = (bestCourse ? [bestCourse, ...courses.filter((course) => course.id !== bestCourse.id)] : courses).slice(0, 2);
   const attraction = (nearby?.items ?? []).find((item) => [12, 14, 28].includes(item.contentTypeId));
-  const featuredPartner = partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
+  const featuredPartner = partners.find((partner) => partner.name === '러너스데이') ?? partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
   const weather = rec?.weather;
 
   return <main className="page home-page">

@@ -104,6 +104,22 @@ async function main() {
   for (const m of medals) await prisma.medal.upsert({ where: { code: m.code }, create: m, update: { name: m.name, description: m.description, courseSlug: m.courseSlug } });
   await prisma.challenge.upsert({ where: { code: 'DAEGU-5' }, create: { code: 'DAEGU-5', name: '대구 5대 코스 정복', description: '5개 코스를 완주하고 한정 메달을 모으세요', targetCount: 5, courseSlugs: ['geumho-dawn-10k', 'modern-alley-10k', 'suseong-blue-5k', 'apsan-night-8k', 'chilseong-tools-7k'] }, update: {} });
 
+  // ---------- 데모 파트너 혜택 ----------
+  const runnerDayPartnerData = {
+    name: '러너스데이',
+    category: '러너 리커버리 스튜디오',
+    addr: '대구광역시 수성구 파동',
+    offerTitle: '완주 러너 리커버리 케어 5,000원 할인',
+    discountKrw: 5000,
+    validUntil: new Date(Date.now() + 90 * 86400000),
+    status: 'DEMO' as const,
+    imageUrl: '/images/local/local-reward-checkin.jpg',
+    sortOrder: 5,
+  };
+  const runnerDayPartner = await prisma.partner.findFirst({ where: { name: runnerDayPartnerData.name } });
+  if (!runnerDayPartner) await prisma.partner.create({ data: runnerDayPartnerData });
+  else await prisma.partner.update({ where: { id: runnerDayPartner.id }, data: runnerDayPartnerData });
+
   // ---------- 가맹 후보 매장 · 쿠폰 ----------
   const merchantDefs = [
     { key: 'deuran-food', name: '들안길 먹거리타운 제휴 후보 매장', category: '음식점', ll: pt(blue.nwE - 45, blue.nwN + 400), addr: '대구 수성구 들안로 일대', coupon: { title: '들안길 먹거리타운 5,000원 할인', discountKrw: 5000, courseSlug: 'suseong-blue-5k' } },
@@ -119,6 +135,7 @@ async function main() {
 
   // ---------- 미션 완료 리워드(실제 지역화폐·제휴 계약 전 시범 발급) ----------
   const rewardCouponDefs = [
+    { merchantName: '러너스데이', category: '시범 웰니스 쿠폰', addr: '대구 수성구 파동', title: '러너스데이 완주 리커버리 5,000원 데모 쿠폰', amountKrw: 5000 },
     { merchantName: '러너스테이', category: '미션 리워드', addr: '대구 수성구 파동', title: '러너스테이 리커버리 3,000원 시범 쿠폰', amountKrw: 3000 },
     { merchantName: '수성못 카페거리 제휴 후보 카페', category: '카페', addr: '대구 수성구 용학로', title: '모닝 리커버리 커피 2,000원 시범 쿠폰', amountKrw: 2000 },
     { merchantName: '들안길 먹거리타운 제휴 후보 매장', category: '음식점', addr: '대구 수성구 들안로 일대', title: '들안길 로컬 식사 5,000원 시범 쿠폰', amountKrw: 5000 },
