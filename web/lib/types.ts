@@ -9,6 +9,14 @@ export interface NearbyResult { source: 'TOURAPI' | 'SEED'; fetchedMs: number; e
 export interface PartnerOffer { id: string; name: string; category: string; addr: string | null; offerTitle: string; discountKrw: number | null; validUntil: string | null; status: 'COMING_SOON' | 'ACTIVE' | 'DEMO' | 'HIDDEN'; source?: 'CURATED' | 'SEED'; imageUrl?: string | null; sortOrder?: number }
 export interface PartnerResult { items: PartnerOffer[] }
 export interface HomeBanner { id: string; title: string; subtitle: string | null; imageUrl: string; linkUrl: string | null; sortOrder: number }
+export interface RunProgram {
+  id: string; slug: string; title: string; description: string;
+  kind: 'MORNING' | 'AFTER_WORK' | 'INDEPENDENT' | 'THEME' | 'POPUP';
+  place: string | null; paceSec: number | null; imageUrl: string | null; startsAt: string;
+  capacity: number; remaining: number; feeKrw: number; status: string; registered: boolean; registrationStatus: string | null;
+  host: { id: string; nickname: string; avatarColor: string; avatarUrl: string | null; bio: string | null; homeArea: string; preferredPaceSec: number | null; phoneVerified: boolean; runCount: number } | null;
+  course: { id: string; slug: string; name: string; distanceM: number; difficulty: string; thumbnailUrl: string | null } | null;
+}
 export interface RunTrackPoint { lat: number; lng: number; t: number; accuracy?: number }
 export interface Run { id: string; courseId: string; mode: 'DEMO' | 'LIVE'; status: string; startedAt: string; distanceM: number; durationSec: number }
 export interface ActiveRun extends Run { track: RunTrackPoint[] | null; course: Course; checkins: { checkpointId: string }[] }

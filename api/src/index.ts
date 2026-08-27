@@ -16,6 +16,7 @@ import { runs } from './routes/runs';
 import { missions } from './routes/missions';
 import { crews } from './routes/crews';
 import { events } from './routes/events';
+import { programs } from './routes/programs';
 import { mates } from './routes/mates';
 import { rankings } from './routes/rankings';
 import { me } from './routes/me';
@@ -41,7 +42,7 @@ app.use(deviceAuth);
 app.use(sessionAuth);
 
 app.get('/', (_req, res) => res.json({ name: 'LOCAL STRIDE API', docs: '/api/health' }));
-app.use('/api', health, auth, tour, weather, courses, recommend, runs, missions, crews, events, mates, rankings, me, ai, partners, content, admin);
+app.use('/api', health, auth, tour, weather, courses, recommend, runs, missions, crews, events, programs, mates, rankings, me, ai, partners, content, admin);
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 app.use(errorHandler);
 

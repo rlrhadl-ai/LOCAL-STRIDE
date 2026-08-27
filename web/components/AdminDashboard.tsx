@@ -5,18 +5,20 @@ import { useRouter } from 'next/navigation';
 import { adminJson, adminRequest, uploadAdminImage } from '@/lib/admin-api';
 import { mediaUrl } from '@/lib/api';
 
-type Panel = 'dashboard' | 'banners' | 'courses' | 'pois' | 'partners' | 'users';
+type Panel = 'dashboard' | 'programs' | 'banners' | 'courses' | 'pois' | 'partners' | 'users';
 type Row = Record<string, any>;
+type ProgramOptions = { hosts: Row[]; courses: Row[] };
 
 const NAV: { id: Panel; label: string }[] = [
-  { id: 'dashboard', label: '대시보드' }, { id: 'banners', label: '광고 배너' }, { id: 'courses', label: '코스' },
+  { id: 'dashboard', label: '대시보드' }, { id: 'programs', label: '러닝 프로그램' }, { id: 'banners', label: '광고 배너' }, { id: 'courses', label: '코스' },
   { id: 'pois', label: '관광지' }, { id: 'partners', label: '혜택·파트너' }, { id: 'users', label: '회원' },
 ];
-const TITLES: Record<Panel, string> = { dashboard: '운영 현황', banners: '홈 광고 배너', courses: '러닝 코스', pois: '관광지 콘텐츠', partners: '로컬 혜택·파트너', users: '회원 관리' };
-const ENDPOINT: Partial<Record<Panel, string>> = { banners: '/banners', courses: '/courses', pois: '/pois', partners: '/partners', users: '/users' };
-const CREATE_ALLOWED: Panel[] = ['banners', 'pois', 'partners'];
+const TITLES: Record<Panel, string> = { dashboard: '운영 현황', programs: '대구 러닝 프로그램', banners: '홈 광고 배너', courses: '러닝 코스', pois: '관광지 콘텐츠', partners: '로컬 혜택·파트너', users: '회원 관리' };
+const ENDPOINT: Partial<Record<Panel, string>> = { programs: '/programs', banners: '/banners', courses: '/courses', pois: '/pois', partners: '/partners', users: '/users' };
+const CREATE_ALLOWED: Panel[] = ['programs', 'banners', 'pois', 'partners'];
 
 const blank = (panel: Panel): Row => panel === 'banners' ? { title: '', subtitle: '', imageUrl: '', linkUrl: '', sortOrder: 0, isActive: true, startsAt: '', endsAt: '' }
+  : panel === 'programs' ? { slug: '', title: '', description: '', kind: 'MORNING', place: '수성못 수변 데크', paceSec: 420, imageUrl: '', hostId: '', courseId: '', startsAt: '', capacity: 12, feeKrw: 0, status: 'OPEN' }
   : panel === 'pois' ? { contentId: '', contentTypeId: 12, title: '', addr1: '', lat: 35.8277, lng: 128.6177, firstImage: '', tel: '', overview: '' }
   : panel === 'partners' ? { name: '', category: '', addr: '', offerTitle: '', discountKrw: '', validUntil: '', status: 'COMING_SOON', imageUrl: '', sortOrder: 0 }
   : {};
@@ -50,6 +52,10 @@ export default function AdminDashboard() {
   const [panel, setPanel] = useState<Panel>('dashboard');
   const [rows, setRows] = useState<Row[]>([]);
   const [stats, setStats] = useState<Row | null>(null);
+  const [programOptions, setProgramOptions] = useState<ProgramOptions>({ hosts: [], courses: [] });
+  const [participantProgram, setParticipantProgram] = useState<Row | null>(null);
+  const [participants, setParticipants] = useState<Row[]>([]);
+  const [participantLoading, setParticipantLoading] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,12 +70,15 @@ export default function AdminDashboard() {
     setLoading(true); setError('');
     try {
       if (target === 'dashboard') setStats(await adminRequest('/dashboard'));
-      else setRows((await adminRequest<{ items: Row[] }>(ENDPOINT[target]!)).items);
+      else if (target === 'programs') {
+        const [result, options] = await Promise.all([adminRequest<{ items: Row[] }>('/programs'), adminRequest<ProgramOptions>('/programs/options')]);
+        setRows(result.items); setProgramOptions(options);
+      } else setRows((await adminRequest<{ items: Row[] }>(ENDPOINT[target]!)).items);
     } catch (err) { if ((err as any)?.status === 401) router.replace('/admin/login'); else setError(err instanceof Error ? err.message : '데이터를 불러오지 못했습니다'); }
     finally { setLoading(false); }
   }
 
-  useEffect(() => { if (user) { setEditing(null); load(panel); } }, [panel, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (user) { setEditing(null); setParticipantProgram(null); load(panel); } }, [panel, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startEdit(row: Row) {
     setMessage(''); setError('');
@@ -80,6 +89,7 @@ export default function AdminDashboard() {
 
   function payload() {
     const item = editing!;
+    if (panel === 'programs') return { slug: item.slug, title: item.title, description: item.description, kind: item.kind, place: item.place, paceSec: item.paceSec === '' ? null : Number(item.paceSec), imageUrl: nullable(item.imageUrl), hostId: item.hostId, courseId: nullable(item.courseId), startsAt: new Date(String(item.startsAt)).toISOString(), capacity: Number(item.capacity), feeKrw: Number(item.feeKrw), status: item.status };
     if (panel === 'banners') return { title: item.title, subtitle: nullable(item.subtitle), imageUrl: item.imageUrl, linkUrl: nullable(item.linkUrl), sortOrder: Number(item.sortOrder), isActive: Boolean(item.isActive), startsAt: nullableIsoDate(item.startsAt), endsAt: nullableIsoDate(item.endsAt) };
     if (panel === 'courses') return { name: item.name, description: item.description, thumbnailUrl: nullable(item.thumbnailUrl), difficulty: item.difficulty, themes: String(item.themes).split(',').map((value) => value.trim()).filter(Boolean), areaName: item.areaName, estMinutes: Number(item.estMinutes), elevationGainM: Number(item.elevationGainM), isPublic: Boolean(item.isPublic) };
     if (panel === 'pois') return { contentId: nullable(item.contentId), contentTypeId: Number(item.contentTypeId), title: item.title, addr1: nullable(item.addr1), lat: Number(item.lat), lng: Number(item.lng), firstImage: nullable(item.firstImage), tel: nullable(item.tel), overview: nullable(item.overview) };
@@ -103,6 +113,23 @@ export default function AdminDashboard() {
     catch (err) { setError(err instanceof Error ? err.message : '삭제하지 못했습니다'); }
   }
 
+  async function manageParticipants(program: Row) {
+    setParticipantProgram(program); setParticipantLoading(true); setError(''); setMessage('');
+    try { setParticipants((await adminRequest<{ items: Row[] }>(`/programs/${program.id}/registrations`)).items); }
+    catch (err) { setError(err instanceof Error ? err.message : '참가자 명단을 불러오지 못했습니다'); }
+    finally { setParticipantLoading(false); }
+  }
+
+  async function updateParticipant(registration: Row, status: string) {
+    if (!participantProgram) return;
+    try {
+      const updated = await adminJson<Row>(`/programs/${participantProgram.id}/registrations/${registration.id}`, 'PATCH', { status });
+      setParticipants((current) => current.map((item) => item.id === registration.id ? { ...item, ...updated } : item));
+      setMessage(status === 'ATTENDED' ? '현장 출석을 기록했습니다.' : '참가 상태를 변경했습니다.');
+      await load('programs');
+    } catch (err) { setError(err instanceof Error ? err.message : '참가 상태를 변경하지 못했습니다'); }
+  }
+
   async function logout() { await adminRequest('/auth/logout', { method: 'POST' }).catch(() => undefined); router.replace('/login?next=/admin'); }
 
   return <main className="admin-page">
@@ -112,14 +139,30 @@ export default function AdminDashboard() {
       <section className="admin-content">
         <div className="admin-heading"><div><span>LOCAL STRIDE MANAGEMENT</span><h1>{TITLES[panel]}</h1></div>{CREATE_ALLOWED.includes(panel) && !editing && <button type="button" className="btn sm" onClick={() => setEditing(blank(panel))}>+ 새 항목</button>}{panel === 'courses' && <Link className="btn sm" href="/courses/new">+ 코스 그리기</Link>}</div>
         {message && <div className="admin-notice">{message}</div>}{error && <div className="admin-error-box" role="alert">{error}</div>}
-        {editing && <form className="admin-editor" onSubmit={save}><div className="admin-editor-head"><h2>{editing.id ? '항목 편집' : '새 항목 만들기'}</h2><button type="button" onClick={() => setEditing(null)}>닫기 ×</button></div><div className="admin-form-grid">{renderForm(panel, editing, change, setError)}</div><div className="admin-editor-actions"><button type="button" className="btn light sm" onClick={() => setEditing(null)}>취소</button><button className="btn sm" disabled={saving}>{saving ? '저장 중…' : '저장'}</button></div></form>}
-        {panel === 'dashboard' ? <Dashboard stats={stats} loading={loading} /> : <DataList panel={panel} rows={rows} loading={loading} onEdit={startEdit} onDelete={remove} />}
+        {editing && <form className="admin-editor" onSubmit={save}><div className="admin-editor-head"><h2>{editing.id ? '항목 편집' : '새 항목 만들기'}</h2><button type="button" onClick={() => setEditing(null)}>닫기 ×</button></div><div className="admin-form-grid">{renderForm(panel, editing, change, setError, programOptions)}</div><div className="admin-editor-actions"><button type="button" className="btn light sm" onClick={() => setEditing(null)}>취소</button><button className="btn sm" disabled={saving}>{saving ? '저장 중…' : '저장'}</button></div></form>}
+        {participantProgram && <ParticipantManager program={participantProgram} rows={participants} loading={participantLoading} onStatus={updateParticipant} onClose={() => setParticipantProgram(null)} />}
+        {panel === 'dashboard' ? <Dashboard stats={stats} loading={loading} /> : <DataList panel={panel} rows={rows} loading={loading} onEdit={startEdit} onDelete={remove} onParticipants={manageParticipants} />}
       </section>
     </div>
   </main>;
 }
 
-function renderForm(panel: Panel, item: Row, change: (key: string, value: unknown) => void, onError: (message: string) => void) {
+function renderForm(panel: Panel, item: Row, change: (key: string, value: unknown) => void, onError: (message: string) => void, programOptions: ProgramOptions) {
+  if (panel === 'programs') return <>
+    <Field label="프로그램명" wide><input className="input" value={item.title} onChange={(e) => change('title', e.target.value)} required /></Field>
+    <Field label="URL 슬러그"><input className="input" value={item.slug} onChange={(e) => change('slug', e.target.value.toLowerCase())} placeholder="suseong-morning-run" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></Field>
+    <Field label="프로그램 유형"><select className="input" value={item.kind} onChange={(e) => change('kind', e.target.value)}><option value="MORNING">아침런</option><option value="AFTER_WORK">퇴근런</option><option value="INDEPENDENT">독립런</option><option value="THEME">주제형 러닝</option><option value="POPUP">번개런</option></select></Field>
+    <Field label="소개" wide><textarea className="input" rows={4} value={item.description} onChange={(e) => change('description', e.target.value)} required /></Field>
+    <ImageField label="프로그램 이미지" value={item.imageUrl || ''} onChange={(value) => change('imageUrl', value)} onError={onError} />
+    <Field label="로컬 호스트"><select className="input" value={item.hostId || ''} onChange={(e) => change('hostId', e.target.value)} required><option value="">호스트 선택</option>{programOptions.hosts.map((host) => <option value={host.id} key={host.id}>{host.nickname}{host.email ? ` · ${host.email}` : ''}</option>)}</select></Field>
+    <Field label="연결 코스"><select className="input" value={item.courseId || ''} onChange={(e) => change('courseId', e.target.value)}><option value="">코스 없음</option>{programOptions.courses.map((course) => <option value={course.id} key={course.id}>{course.name} · {(course.distanceM / 1000).toFixed(1)}km</option>)}</select></Field>
+    <Field label="집결 장소" wide><input className="input" value={item.place || ''} onChange={(e) => change('place', e.target.value)} required /></Field>
+    <Field label="시작 일시"><input className="input" type="datetime-local" value={item.startsAt || ''} onChange={(e) => change('startsAt', e.target.value)} required /></Field>
+    <Field label="목표 페이스(초/km)"><input className="input" type="number" min="180" max="900" value={item.paceSec ?? ''} onChange={(e) => change('paceSec', e.target.value)} placeholder="예: 390" /></Field>
+    <Field label="모집 인원"><input className="input" type="number" min="1" max="1000" value={item.capacity} onChange={(e) => change('capacity', e.target.value)} required /></Field>
+    <Field label="참가비(원)"><input className="input" type="number" min="0" value={item.feeKrw} onChange={(e) => change('feeKrw', e.target.value)} /></Field>
+    <Field label="상태"><select className="input" value={item.status} onChange={(e) => change('status', e.target.value)}><option value="DRAFT">작성 중</option><option value="OPEN">모집 중</option><option value="CLOSED">모집 마감</option><option value="FINISHED">종료</option><option value="CANCELED">취소</option></select></Field>
+  </>;
   if (panel === 'banners') return <><Field label="배너 제목" wide><input className="input" value={item.title} onChange={(e) => change('title', e.target.value)} required /></Field><Field label="보조 문구" wide><input className="input" value={item.subtitle || ''} onChange={(e) => change('subtitle', e.target.value)} /></Field><ImageField label="배너 이미지" value={item.imageUrl || ''} onChange={(value) => change('imageUrl', value)} onError={onError} /><Field label="클릭 이동 경로"><input className="input" value={item.linkUrl || ''} onChange={(e) => change('linkUrl', e.target.value)} placeholder="/courses/… 또는 https://…" /></Field><Field label="노출 순서"><input className="input" type="number" min="0" value={item.sortOrder} onChange={(e) => change('sortOrder', e.target.value)} /></Field><Field label="노출 시작"><input className="input" type="datetime-local" value={item.startsAt || ''} onChange={(e) => change('startsAt', e.target.value)} /></Field><Field label="노출 종료"><input className="input" type="datetime-local" value={item.endsAt || ''} onChange={(e) => change('endsAt', e.target.value)} /></Field><Field label="상태"><label className="admin-check"><input type="checkbox" checked={Boolean(item.isActive)} onChange={(e) => change('isActive', e.target.checked)} /> 홈에 노출</label></Field></>;
   if (panel === 'courses') return <><Field label="코스명" wide><input className="input" value={item.name} onChange={(e) => change('name', e.target.value)} required /></Field><Field label="설명" wide><textarea className="input" rows={4} value={item.description || ''} onChange={(e) => change('description', e.target.value)} /></Field><ImageField label="코스 썸네일" value={item.thumbnailUrl || ''} onChange={(value) => change('thumbnailUrl', value)} onError={onError} /><Field label="난이도"><select className="input" value={item.difficulty} onChange={(e) => change('difficulty', e.target.value)}><option>초급</option><option>초중급</option><option>중급</option><option>상급</option></select></Field><Field label="테마"><input className="input" value={item.themes || ''} onChange={(e) => change('themes', e.target.value)} placeholder="수변, 야경" /></Field><Field label="지역"><input className="input" value={item.areaName || ''} onChange={(e) => change('areaName', e.target.value)} /></Field><Field label="예상 시간(분)"><input className="input" type="number" min="1" value={item.estMinutes} onChange={(e) => change('estMinutes', e.target.value)} /></Field><Field label="누적 상승고도(m)"><input className="input" type="number" min="0" value={item.elevationGainM} onChange={(e) => change('elevationGainM', e.target.value)} /></Field><Field label="공개 상태"><label className="admin-check"><input type="checkbox" checked={Boolean(item.isPublic)} onChange={(e) => change('isPublic', e.target.checked)} /> 사용자에게 공개</label></Field></>;
   if (panel === 'pois') return <><Field label="관광지명" wide><input className="input" value={item.title} onChange={(e) => change('title', e.target.value)} required /></Field><Field label="TourAPI 콘텐츠 ID"><input className="input" value={item.contentId || ''} onChange={(e) => change('contentId', e.target.value)} /></Field><Field label="유형 코드"><input className="input" type="number" value={item.contentTypeId} onChange={(e) => change('contentTypeId', e.target.value)} /></Field><ImageField label="관광지 썸네일" value={item.firstImage || ''} onChange={(value) => change('firstImage', value)} onError={onError} /><Field label="주소" wide><input className="input" value={item.addr1 || ''} onChange={(e) => change('addr1', e.target.value)} /></Field><Field label="위도"><input className="input" type="number" step="any" value={item.lat} onChange={(e) => change('lat', e.target.value)} required /></Field><Field label="경도"><input className="input" type="number" step="any" value={item.lng} onChange={(e) => change('lng', e.target.value)} required /></Field><Field label="전화번호"><input className="input" value={item.tel || ''} onChange={(e) => change('tel', e.target.value)} /></Field><Field label="소개" wide><textarea className="input" rows={5} value={item.overview || ''} onChange={(e) => change('overview', e.target.value)} /></Field></>;
@@ -129,16 +172,23 @@ function renderForm(panel: Panel, item: Row, change: (key: string, value: unknow
 
 function Dashboard({ stats, loading }: { stats: Row | null; loading: boolean }) {
   if (loading || !stats) return <div className="admin-loading">운영 데이터를 불러오는 중…</div>;
-  const labels: Record<string, string> = { users: '전체 회원', courses: '코스', pois: '관광지', partners: '파트너', banners: '배너', runs: '러닝 기록' };
+  const labels: Record<string, string> = { users: '전체 회원', courses: '코스', pois: '관광지', partners: '파트너', banners: '배너', runs: '러닝 기록', programs: '로컬 프로그램', programRegistrations: '프로그램 신청', attendance: '현장 출석' };
   return <><div className="admin-stats">{Object.entries(stats.counts).map(([key, value]) => <article key={key}><span>{labels[key]}</span><strong>{String(value)}</strong></article>)}</div><section className="admin-panel"><h2>최근 가입 회원</h2><div className="admin-table">{stats.recentUsers.map((item: Row) => <div className="admin-table-row" key={item.id}><div><strong>{item.nickname}</strong><span>{item.email || '익명 기기 회원'}</span></div><em>{item.role === 'ADMIN' ? '관리자' : '회원'}</em><time>{new Date(item.createdAt).toLocaleDateString('ko-KR')}</time></div>)}</div></section></>;
 }
 
-function DataList({ panel, rows, loading, onEdit, onDelete }: { panel: Panel; rows: Row[]; loading: boolean; onEdit: (row: Row) => void; onDelete: (row: Row) => void }) {
+function ParticipantManager({ program, rows, loading, onStatus, onClose }: { program: Row; rows: Row[]; loading: boolean; onStatus: (registration: Row, status: string) => void; onClose: () => void }) {
+  const labels: Record<string, string> = { REGISTERED: '신청 완료', CANCELLED: '취소', ATTENDED: '출석', NO_SHOW: '불참' };
+  return <section className="admin-editor admin-participants"><div className="admin-editor-head"><div><span>참가자·현장 운영</span><h2>{program.title}</h2></div><button type="button" onClick={onClose}>닫기 ×</button></div>
+    {loading ? <div className="admin-loading">참가자 명단을 불러오는 중…</div> : rows.length ? <div className="admin-registration-list">{rows.map((registration) => <div className="admin-registration-row" key={registration.id}><div><strong>{registration.user.nickname}</strong><span>{registration.user.email || '이메일 미등록'} · {registration.user.homeArea}</span></div><time>{new Date(registration.createdAt).toLocaleDateString('ko-KR')} 신청</time><select className="input" value={registration.status} aria-label={`${registration.user.nickname} 참가 상태`} onChange={(event) => onStatus(registration, event.target.value)}>{Object.entries(labels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div>)}</div> : <div className="admin-empty">아직 신청한 참가자가 없습니다.</div>}
+  </section>;
+}
+
+function DataList({ panel, rows, loading, onEdit, onDelete, onParticipants }: { panel: Panel; rows: Row[]; loading: boolean; onEdit: (row: Row) => void; onDelete: (row: Row) => void; onParticipants: (row: Row) => void }) {
   if (loading) return <div className="admin-loading">데이터를 불러오는 중…</div>;
   if (!rows.length) return <div className="admin-empty">등록된 항목이 없습니다.</div>;
   return <div className="admin-data-list">{rows.map((row) => {
     const image = row.imageUrl || row.thumbnailUrl || row.firstImage || row.avatarUrl; const title = row.title || row.name || row.nickname;
-    const sub = panel === 'banners' ? `${row.isActive ? '노출 중' : '숨김'} · 순서 ${row.sortOrder}` : panel === 'courses' ? `${(row.distanceM / 1000).toFixed(1)}km · ${row.difficulty} · ${row.isPublic ? '공개' : '비공개'}` : panel === 'pois' ? `${row.addr1 || '주소 없음'} · ${row.source}` : panel === 'partners' ? `${row.category} · ${row.status}` : `${row.email || '익명 기기 회원'} · 러닝 ${row._count?.runs || 0}회`;
-    return <article className="admin-data-card" key={row.id}><div className="admin-data-thumb">{image ? <img src={mediaUrl(image)} alt="" /> : <span>{String(title).slice(0, 1)}</span>}</div><div className="admin-data-copy"><strong>{title}</strong><span>{sub}</span>{(row.subtitle || row.offerTitle) && <p>{row.subtitle || row.offerTitle}</p>}</div><div className="admin-data-actions"><button type="button" onClick={() => onEdit(row)}>편집</button>{panel !== 'users' && <button type="button" className="danger" onClick={() => onDelete(row)}>삭제</button>}</div></article>;
+    const sub = panel === 'programs' ? `${new Date(row.startsAt).toLocaleString('ko-KR')} · 신청 ${row.registrationCount}/${row.capacity}명 · 출석 ${row.attendanceCount}명 · ${row.status}` : panel === 'banners' ? `${row.isActive ? '노출 중' : '숨김'} · 순서 ${row.sortOrder}` : panel === 'courses' ? `${(row.distanceM / 1000).toFixed(1)}km · ${row.difficulty} · ${row.isPublic ? '공개' : '비공개'}` : panel === 'pois' ? `${row.addr1 || '주소 없음'} · ${row.source}` : panel === 'partners' ? `${row.category} · ${row.status}` : `${row.email || '익명 기기 회원'} · 러닝 ${row._count?.runs || 0}회`;
+    return <article className="admin-data-card" key={row.id}><div className="admin-data-thumb">{image ? <img src={mediaUrl(image)} alt="" /> : <span>{String(title).slice(0, 1)}</span>}</div><div className="admin-data-copy"><strong>{title}</strong><span>{sub}</span>{(row.subtitle || row.offerTitle || row.description) && <p>{row.subtitle || row.offerTitle || row.description}</p>}</div><div className="admin-data-actions">{panel === 'programs' && <button type="button" onClick={() => onParticipants(row)}>참가자</button>}<button type="button" onClick={() => onEdit(row)}>편집</button>{panel !== 'users' && <button type="button" className="danger" onClick={() => onDelete(row)}>삭제</button>}</div></article>;
   })}</div>;
 }

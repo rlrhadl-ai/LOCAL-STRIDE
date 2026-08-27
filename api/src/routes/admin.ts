@@ -62,11 +62,14 @@ admin.get('/admin/auth/session', requireAdmin, (req, res) => res.json({ user: re
 admin.use('/admin', requireAdmin);
 
 admin.get('/admin/dashboard', wrap(async (_req, res) => {
-  const [users, courses, pois, partners, banners, runs, recentUsers] = await Promise.all([
+  const [users, courses, pois, partners, banners, runs, programs, programRegistrations, attendance, recentUsers] = await Promise.all([
     prisma.user.count(), prisma.course.count(), prisma.poi.count(), prisma.partner.count(), prisma.banner.count(), prisma.run.count(),
+    prisma.event.count({ where: { kind: { not: 'RACE' } } }),
+    prisma.eventRegistration.count({ where: { event: { kind: { not: 'RACE' } }, status: { in: ['REGISTERED', 'ATTENDED'] } } }),
+    prisma.eventRegistration.count({ where: { event: { kind: { not: 'RACE' } }, status: 'ATTENDED' } }),
     prisma.user.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, nickname: true, email: true, role: true, isActive: true, createdAt: true } }),
   ]);
-  res.json({ counts: { users, courses, pois, partners, banners, runs }, recentUsers });
+  res.json({ counts: { users, courses, pois, partners, banners, runs, programs, programRegistrations, attendance }, recentUsers });
 }));
 
 admin.post('/admin/uploads', imageUpload.single('file'), (req, res) => {
@@ -130,6 +133,65 @@ const partnerBody = z.object({
 admin.post('/admin/partners', wrap(async (req, res) => res.status(201).json(await prisma.partner.create({ data: partnerBody.parse(req.body) }))));
 admin.patch('/admin/partners/:id', wrap(async (req, res) => res.json(await prisma.partner.update({ where: { id: String(req.params.id) }, data: partnerBody.partial().parse(req.body) }))));
 admin.delete('/admin/partners/:id', wrap(async (req, res) => { await prisma.partner.delete({ where: { id: String(req.params.id) } }); res.status(204).end(); }));
+
+admin.get('/admin/programs/options', wrap(async (_req, res) => {
+  const [hosts, courses] = await Promise.all([
+    prisma.user.findMany({ where: { isActive: true }, select: { id: true, nickname: true, email: true, homeArea: true }, orderBy: { nickname: 'asc' }, take: 500 }),
+    prisma.course.findMany({ where: { isPublic: true }, select: { id: true, name: true, slug: true, distanceM: true }, orderBy: { name: 'asc' } }),
+  ]);
+  res.json({ hosts, courses });
+}));
+
+admin.get('/admin/programs', wrap(async (_req, res) => {
+  const rows = await prisma.event.findMany({
+    where: { kind: { not: 'RACE' } }, orderBy: { startsAt: 'desc' },
+    include: { host: { select: { id: true, nickname: true, email: true } }, course: { select: { id: true, name: true, slug: true } }, registrations: { select: { status: true } } },
+  });
+  res.json({ items: rows.map(({ registrations, ...program }) => ({
+    ...program,
+    registrationCount: registrations.filter((item) => item.status === 'REGISTERED' || item.status === 'ATTENDED').length,
+    attendanceCount: registrations.filter((item) => item.status === 'ATTENDED').length,
+  })) });
+}));
+
+const programBody = z.object({
+  slug: z.string().trim().min(3).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, '슬러그는 영문 소문자·숫자·하이픈만 사용할 수 있습니다'),
+  title: z.string().trim().min(2).max(100), description: z.string().trim().min(5).max(2000),
+  kind: z.enum(['MORNING', 'AFTER_WORK', 'INDEPENDENT', 'THEME', 'POPUP']),
+  place: z.string().trim().min(2).max(200), paceSec: z.number().int().min(180).max(900).nullable().optional(), imageUrl: imageUrl.nullable().optional(),
+  hostId: z.string().min(1), courseId: z.string().nullable().optional(), startsAt: z.coerce.date(),
+  capacity: z.number().int().min(1).max(1000), feeKrw: z.number().int().min(0).max(10000000).default(0),
+  status: z.enum(['DRAFT', 'OPEN', 'CLOSED', 'FINISHED', 'CANCELED']).default('OPEN'),
+});
+admin.post('/admin/programs', wrap(async (req, res) => {
+  const body = programBody.parse(req.body);
+  res.status(201).json(await prisma.event.create({ data: { ...body, tshirt: false } }));
+}));
+admin.patch('/admin/programs/:id', wrap(async (req, res) => {
+  const body = programBody.partial().parse(req.body);
+  res.json(await prisma.event.update({ where: { id: String(req.params.id) }, data: body }));
+}));
+admin.delete('/admin/programs/:id', wrap(async (req, res) => {
+  const id = String(req.params.id);
+  const program = await prisma.event.findUnique({ where: { id }, select: { kind: true, _count: { select: { registrations: true } } } });
+  if (!program || program.kind === 'RACE') throw new HttpError(404, '러닝 프로그램을 찾을 수 없습니다');
+  if (program._count.registrations) throw new HttpError(409, '신청자가 있는 프로그램은 삭제 대신 취소 상태로 변경해 주세요');
+  await prisma.event.delete({ where: { id } });
+  res.status(204).end();
+}));
+admin.get('/admin/programs/:id/registrations', wrap(async (req, res) => {
+  const items = await prisma.eventRegistration.findMany({
+    where: { eventId: String(req.params.id), event: { kind: { not: 'RACE' } } }, orderBy: { createdAt: 'asc' },
+    include: { user: { select: { id: true, nickname: true, email: true, homeArea: true, preferredPaceSec: true } } },
+  });
+  res.json({ items });
+}));
+admin.patch('/admin/programs/:id/registrations/:registrationId', wrap(async (req, res) => {
+  const body = z.object({ status: z.enum(['REGISTERED', 'CANCELLED', 'ATTENDED', 'NO_SHOW']) }).parse(req.body);
+  const registration = await prisma.eventRegistration.findFirst({ where: { id: String(req.params.registrationId), eventId: String(req.params.id), event: { kind: { not: 'RACE' } } } });
+  if (!registration) throw new HttpError(404, '참가자를 찾을 수 없습니다');
+  res.json(await prisma.eventRegistration.update({ where: { id: registration.id }, data: { status: body.status, checkedInAt: body.status === 'ATTENDED' ? new Date() : null } }));
+}));
 
 admin.get('/admin/banners', wrap(async (_req, res) => res.json({ items: await prisma.banner.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] }) })));
 const bannerBody = z.object({

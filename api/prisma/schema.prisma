@@ -62,6 +62,23 @@ enum EventStatus {
   OPEN
   CLOSED
   FINISHED
+  CANCELED
+}
+
+enum EventKind {
+  RACE
+  MORNING
+  AFTER_WORK
+  INDEPENDENT
+  THEME
+  POPUP
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
 }
 
 enum CrewRole {
@@ -111,6 +128,7 @@ model User {
   mateApplications   MateApplication[]
   eventRegistrations EventRegistration[]
   eventResults       EventResult[]
+  hostedEvents       Event[]             @relation("HostedEvents")
   courses            Course[]
   adminSessions      AdminSession[]
 }
@@ -432,6 +450,12 @@ model Event {
   slug          String              @unique
   title         String
   description   String
+  kind          EventKind           @default(RACE)
+  place         String?
+  paceSec       Int?
+  imageUrl      String?
+  hostId        String?
+  host          User?               @relation("HostedEvents", fields: [hostId], references: [id])
   courseId      String?
   course        Course?             @relation(fields: [courseId], references: [id])
   startsAt      DateTime
@@ -441,6 +465,9 @@ model Event {
   status        EventStatus         @default(OPEN)
   registrations EventRegistration[]
   results       EventResult[]
+
+  @@index([kind, status, startsAt])
+  @@index([hostId])
 }
 
 model EventRegistration {
@@ -453,6 +480,8 @@ model EventRegistration {
   tshirtSize String?
   paid       Boolean  @default(false)
   paymentRef String?
+  status     RegistrationStatus @default(REGISTERED)
+  checkedInAt DateTime?
   createdAt  DateTime @default(now())
 
   @@unique([eventId, userId])

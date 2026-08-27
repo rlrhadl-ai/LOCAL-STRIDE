@@ -128,9 +128,27 @@ async function main() {
   for (const m of missionDefs) await prisma.mission.upsert({ where: { code: m.code }, create: { code: m.code, type: m.type, title: m.title, description: m.description, periodStart: start, periodEnd: end, rule: m.rule, rewardText: m.rewardText }, update: { periodStart: start, periodEnd: end, rule: m.rule } });
 
   // ---------- 운영 계정 · 대회 · 크루 · 메이트 ----------
-  const ops = await prisma.user.upsert({ where: { deviceId: 'seed-ops' }, create: { deviceId: 'seed-ops', nickname: '로컬스트라이드', avatarColor: '#E4B23A' }, update: {} });
+  const ops = await prisma.user.upsert({
+    where: { deviceId: 'seed-ops' },
+    create: { deviceId: 'seed-ops', nickname: '로컬스트라이드 호스트', avatarColor: '#E4B23A', bio: '대구의 숨은 러닝 코스를 함께 달리는 LOCAL STRIDE 로컬 호스트', homeArea: '대구 수성구', preferredPaceSec: 390 },
+    update: { nickname: '로컬스트라이드 호스트', bio: '대구의 숨은 러닝 코스를 함께 달리는 LOCAL STRIDE 로컬 호스트', homeArea: '대구 수성구', preferredPaceSec: 390 },
+  });
   const eventStart = new Date(now.getFullYear(), now.getMonth() + 1, 15, 8, 0, 0);
   await prisma.event.upsert({ where: { slug: '3km-challenge' }, create: { slug: '3km-challenge', title: '로컬 스트라이드 3KM CHALLENGE', description: '수성못 3km 러닝 챌린지. 라이브 랭킹 전광판·MY RECORD 카드 제공. (날짜는 확정 후 수정)', courseId: (await prisma.course.findUnique({ where: { slug: 'suseong-light-3k' } }))!.id, startsAt: eventStart, capacity: 200, feeKrw: 0, tshirt: true, status: 'OPEN' }, update: {} });
+  const lightCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'suseong-light-3k' } });
+  const foodCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'deuran-food-7k' } });
+  const modernCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'modern-alley-10k' } });
+  const nextAt = (days: number, hour: number, minute = 0) => { const date = new Date(now.getTime() + days * 86400000); date.setHours(hour, minute, 0, 0); return date; };
+  const programDefs = [
+    { slug: 'suseong-morning-run', title: '수성못 모닝 블루런', description: '대구 로컬 호스트와 수성못의 아침을 여는 초보 환영 3K 러닝입니다.', kind: 'MORNING' as const, place: '수성못 수변 데크', paceSec: 420, courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), capacity: 12, feeKrw: 0 },
+    { slug: 'deuran-after-work-run', title: '들안길 퇴근 미식런', description: '퇴근 후 수성못에서 출발해 들안길의 야경과 로컬 미식 거리를 만나는 7K 러닝입니다.', kind: 'AFTER_WORK' as const, place: '수성못 상화동산 입구', paceSec: 390, courseId: foodCourse.id, startsAt: nextAt(4, 19, 30), capacity: 10, feeKrw: 5000 },
+    { slug: 'daegu-independent-theme-run', title: '대구 골목 독립런', description: '근대골목의 이야기를 따라 달리는 월간 주제형 러닝. 혼자 와도 로컬 러너와 함께 시작합니다.', kind: 'THEME' as const, place: '청라언덕 선교사 주택 앞', paceSec: 420, courseId: modernCourse.id, startsAt: nextAt(8, 9), capacity: 16, feeKrw: 10000 },
+  ];
+  for (const program of programDefs) await prisma.event.upsert({
+    where: { slug: program.slug },
+    create: { ...program, hostId: ops.id, status: 'OPEN', tshirt: false },
+    update: {},
+  });
   let crew = await prisma.crew.findFirst({ where: { name: '수성못 아침 크루' } });
   if (!crew) crew = await prisma.crew.create({ data: { name: '수성못 아침 크루', description: '평일 아침 6시 반, 수성못 한 바퀴. 초보 환영, 페이스 6~8분.', lifestyle: ['아침', '초보환영', '직장인'], paceMinSec: 360, paceMaxSec: 480, area: '대구 수성구', ownerId: ops.id, members: { create: { userId: ops.id, role: 'OWNER' } }, runs: { create: { courseId: blueCourse.id, startsAt: new Date(now.getTime() + 2 * 86400000), note: '수변 데크 앞 집결' } } } });
   const post = await prisma.matePost.findFirst({ where: { authorId: ops.id } });

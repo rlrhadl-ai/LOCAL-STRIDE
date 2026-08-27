@@ -5,22 +5,22 @@ import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://localstride.kr'),
-  title: 'LOCAL STRIDE · 달리면서 여행하는 도시, 대구',
-  description: '러닝 코스를 따라 관광·소비·경험이 연결되는 대구 특화 러닝 관광 플랫폼',
+  title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
+  description: '대구 러너가 고른 코스, 로컬 러닝 메이트, 아침런과 퇴근런을 한곳에서 만나는 대구 러닝 커뮤니티',
   manifest: '/manifest.json',
   openGraph: {
-    title: 'LOCAL STRIDE · 달리면서 여행하는 도시, 대구',
-    description: 'GPS 러닝으로 대구의 관광·로컬 혜택을 만나는 러닝 관광 플랫폼',
+    title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
+    description: '대구의 길과 사람을 연결하는 아침런·퇴근런·주제형 로컬 러닝 커뮤니티',
     url: 'https://localstride.kr',
     siteName: 'LOCAL STRIDE',
     locale: 'ko_KR',
     type: 'website',
-    images: [{ url: '/social/localstride-share.jpg', width: 1200, height: 630, alt: 'LOCAL STRIDE · 달리면서 여행하는 도시, 대구' }],
+    images: [{ url: '/social/localstride-share.jpg', width: 1200, height: 630, alt: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LOCAL STRIDE · 달리면서 여행하는 도시, 대구',
-    description: 'GPS 러닝으로 대구의 관광·로컬 혜택을 만나는 러닝 관광 플랫폼',
+    title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
+    description: '대구의 길과 사람을 연결하는 아침런·퇴근런·주제형 로컬 러닝 커뮤니티',
     images: ['/social/localstride-share.jpg'],
   },
 };

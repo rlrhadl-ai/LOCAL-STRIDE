@@ -6,7 +6,7 @@ import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
 import LiveBadge from '@/components/LiveBadge';
 import { api, mediaUrl } from '@/lib/api';
-import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation } from '@/lib/types';
+import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation, RunProgram } from '@/lib/types';
 
 const KMS = [3, 5, 7, 10];
 const THEMES = ['수변', '야경', '미식', '역사'];
@@ -26,6 +26,7 @@ export default function Home() {
   const [nearby, setNearby] = useState<NearbyResult | null>(null);
   const [partners, setPartners] = useState<PartnerOffer[]>([]);
   const [banners, setBanners] = useState<HomeBanner[]>([]);
+  const [programs, setPrograms] = useState<RunProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -46,12 +47,14 @@ export default function Home() {
       api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').catch(() => null),
       api.get<{ items: PartnerOffer[] }>('/partners').catch(() => ({ items: [] })),
       api.get<{ items: HomeBanner[] }>('/banners').catch(() => ({ items: [] })),
-    ]).then(([courseResult, nearbyResult, partnerResult, bannerResult]) => {
+      api.get<{ items: RunProgram[] }>('/programs?limit=3').catch(() => ({ items: [] })),
+    ]).then(([courseResult, nearbyResult, partnerResult, bannerResult, programResult]) => {
       if (!alive) return;
       setCourses(courseResult.items);
       setNearby(nearbyResult);
       setPartners(partnerResult.items);
       setBanners(bannerResult.items);
+      setPrograms(programResult.items);
     }).catch(() => alive && setErr('홈 정보를 잠시 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
     return () => { alive = false; };
   }, []);
@@ -60,6 +63,8 @@ export default function Home() {
   const best = rec?.best;
   const attractions = (nearby?.items ?? []).filter((item) => [12, 14, 28].includes(item.contentTypeId)).slice(0, 4);
   const placeKind = (contentTypeId: number) => ({ 12: '관광지', 14: '문화', 28: '레포츠' }[contentTypeId] ?? '로컬 스폿');
+  const nextProgram = programs[0];
+  const programKind = (kind: RunProgram['kind']) => ({ MORNING: '아침런', AFTER_WORK: '퇴근런', INDEPENDENT: '독립런', THEME: '주제형 러닝', POPUP: '번개런' }[kind]);
   return (
     <main className="page">
       <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg></Link>} />
@@ -109,8 +114,13 @@ export default function Home() {
         <div className="local-program-head"><span>DAEGU RUNNING CLUB</span><i aria-hidden>같이</i></div>
         <h2>오늘 대구에서 같이 달릴 사람</h2>
         <p>대구 러너가 길을 안내하고, 혼자 온 러너도 자연스럽게 섞이는 일상 러닝을 준비하고 있어요.</p>
+        {nextProgram && <Link href="/programs" className="local-program-next">
+          <time><b>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</b><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
+          <div><span>{programKind(nextProgram.kind)} · {nextProgram.host?.nickname || '대구 로컬 호스트'}</span><strong>{nextProgram.title}</strong><small>{nextProgram.place} · 남은 자리 {nextProgram.remaining}명</small></div>
+          <b aria-hidden>→</b>
+        </Link>}
         <div className="local-program-types"><span>아침런</span><span>퇴근런</span><span>독립런</span><span>주제형 번개런</span></div>
-        <div className="local-program-actions"><Link href="/mates">러닝 메이트 찾기 <b>→</b></Link><Link href="/crews">대구 크루 보기 <b>→</b></Link></div>
+        <div className="local-program-actions"><Link href="/programs">이번 주 일정 보기 <b>→</b></Link><Link href="/mates">러닝 메이트 찾기 <b>→</b></Link></div>
       </section>
 
       <div className="section-title editorial-title"><div><span className="section-kicker">LOCAL STORY</span><h2>대구 사람들이 달리다 멈추는 곳</h2></div><span>{nearby?.source === 'TOURAPI' ? '관광공사 공공데이터' : '저장 관광지 데이터'}</span></div>
