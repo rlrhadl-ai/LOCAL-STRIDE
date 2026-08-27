@@ -8,6 +8,7 @@ import { HttpError, wrap } from '../middleware/error';
 
 export const auth = Router();
 const attempts = new Map<string, { count: number; resetAt: number }>();
+const reservedAdminEmails = new Set((process.env.ADMIN_EMAILS || 'toy146@naver.com').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
 const password = z.string().min(8, '비밀번호는 8자 이상이어야 합니다').max(100)
   .regex(/[A-Za-z]/, '비밀번호에 영문자를 포함해 주세요')
   .regex(/[0-9]/, '비밀번호에 숫자를 포함해 주세요');
@@ -22,6 +23,7 @@ function loginAllowed(key: string) {
 
 auth.post('/auth/signup', wrap(async (req, res) => {
   const body = credentials.extend({ nickname: z.string().trim().min(2).max(16) }).parse(req.body);
+  if (reservedAdminEmails.has(body.email)) throw new HttpError(403, '관리자 초대 이메일입니다. /admin/signup에서 최초 계정을 설정해 주세요');
   if (await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } })) throw new HttpError(409, '이미 가입된 이메일입니다');
   const passwordHash = await hashPassword(body.password);
   const anonymous = req.user && !req.user.isAuthenticated ? await prisma.user.findUnique({ where: { id: req.user.id }, select: { id: true, email: true, passwordHash: true } }) : null;
