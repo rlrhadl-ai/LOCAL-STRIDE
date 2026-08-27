@@ -23,7 +23,7 @@ export default function RankingsPage() {
       <div className="section-title"><h2>코스 베스트</h2></div>
       <select className="input" value={courseId} onChange={(e) => setCourseId(e.target.value)} style={{ marginBottom: 10 }}>{courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
       <div className="stack">{best.map((r) => <div key={r.rank} className={`rank ${r.isMe ? 'me' : ''}`}><span className={`pos ${r.rank <= 3 ? 'top' : ''}`}>{r.rank}</span><span className="av" style={{ background: r.avatarColor }}>{r.nickname.slice(0, 1)}</span><span>{r.nickname}{r.isMe ? ' (나)' : ''}<div className="muted" style={{ fontSize: 11 }}>{r.avgPaceSec ? fmtPace(r.avgPaceSec) : ''}</div></span><b>{fmtTime(r.durationSec)}</b></div>)}{best.length === 0 && <div className="empty">이 코스의 기록이 아직 없어요</div>}</div>
-      <p className="note">GPS 이상치(페이스 2'30" 미만, 25분/km 초과, 점프)는 완주 검증에서 걸러져 랭킹에 오르지 않습니다.</p>
+      <p className="note">GPS 이상치(페이스 2분 30초/km 미만, 25분/km 초과, 위치 점프)는 완주 검증에서 걸러져 랭킹에 오르지 않습니다.</p>
     </main>
   );
 }

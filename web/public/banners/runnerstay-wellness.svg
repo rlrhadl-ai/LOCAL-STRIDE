@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">러너스테이 웰니스 배너</title>
+  <desc id="desc">달린 뒤 회복하는 러너를 표현한 네이비와 골드 색상의 그래픽</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071A4B"/><stop offset="1" stop-color="#195DDC"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#F3C54F" stop-opacity=".6"/><stop offset="1" stop-color="#F3C54F" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="960" height="360" rx="32" fill="url(#bg)"/>
+  <circle cx="790" cy="78" r="190" fill="url(#glow)"/>
+  <path d="M608 282c52-79 116-120 217-134" fill="none" stroke="#AFC8FF" stroke-width="12" stroke-linecap="round" opacity=".42"/>
+  <path d="M639 266c54-63 108-93 190-108" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="8 18" stroke-linecap="round" opacity=".9"/>
+  <circle cx="748" cy="191" r="24" fill="#F3C54F"/><circle cx="748" cy="191" r="10" fill="#0A1D52"/>
+  <text x="58" y="77" fill="#F3C54F" font-family="Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="4">RUN · RECOVER · STAY</text>
+  <text x="58" y="145" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="800">달린 뒤, 제대로 회복하세요</text>
+  <text x="58" y="194" fill="#D9E5FF" font-family="Arial,sans-serif" font-size="24" font-weight="500">수성구 파동 러너 웰니스 센터 · 러너스테이</text>
+  <rect x="58" y="238" width="188" height="54" rx="27" fill="#fff"/>
+  <text x="96" y="273" fill="#0A1D52" font-family="Arial,sans-serif" font-size="20" font-weight="800">제휴 준비 중</text>
+</svg>

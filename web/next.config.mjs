@@ -11,6 +11,7 @@ const nextConfig = {
     if (!apiOrigin) return [];
     return [
       { source: '/api/:path*', destination: `${apiOrigin}/api/:path*` },
+      { source: '/uploads/:path*', destination: `${apiOrigin}/uploads/:path*` },
       { source: '/socket.io/:path*', destination: `${apiOrigin}/socket.io/:path*` },
     ];
   },

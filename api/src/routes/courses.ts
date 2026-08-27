@@ -8,7 +8,7 @@ import { requireUser } from '../middleware/auth';
 
 export const courses = Router();
 
-const courseSelect = { id: true, slug: true, name: true, description: true, distanceM: true, difficulty: true, themes: true, areaName: true, startLat: true, startLng: true, elevationGainM: true, estMinutes: true, source: true, isPublic: true, createdAt: true } as const;
+const courseSelect = { id: true, slug: true, name: true, description: true, thumbnailUrl: true, distanceM: true, difficulty: true, themes: true, areaName: true, startLat: true, startLng: true, elevationGainM: true, estMinutes: true, source: true, isPublic: true, createdAt: true } as const;
 
 // GET /api/courses?theme=수변&km=5
 courses.get('/courses', wrap(async (req, res) => {

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">LOCAL STRIDE 수성못 배너</title>
+  <desc id="desc">수성못을 상징하는 푸른 물결과 러닝 경로 그래픽</desc>
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1B5BDF"/><stop offset="1" stop-color="#29B6D5"/></linearGradient></defs>
+  <rect width="960" height="360" rx="32" fill="url(#sky)"/>
+  <circle cx="824" cy="72" r="44" fill="#FFD45C"/>
+  <path d="M0 249c120-45 200 31 332-13s221-16 314 9 190 8 314-50v165H0z" fill="#0A1D52" opacity=".68"/>
+  <path d="M0 282c116-38 218 25 328-6s206-18 307 11 196 9 325-39v112H0z" fill="#071A4B" opacity=".82"/>
+  <path d="M587 121c43-41 95-55 150-37 58 19 84 70 142 78" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="6 16"/>
+  <circle cx="587" cy="121" r="14" fill="#F3C54F"/><circle cx="879" cy="162" r="14" fill="#F3C54F"/>
+  <text x="58" y="75" fill="#D9F7FF" font-family="Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="4">LOCAL DISCOVERY RUN</text>
+  <text x="58" y="143" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="800">오늘의 러닝이 여행이 되는 순간</text>
+  <text x="58" y="194" fill="#E7F8FF" font-family="Arial,sans-serif" font-size="24">수성못 코스와 로컬 스폿을 함께 만나보세요</text>
+  <rect x="58" y="238" width="218" height="54" rx="27" fill="#F3C54F"/>
+  <text x="92" y="273" fill="#0A1D52" font-family="Arial,sans-serif" font-size="20" font-weight="800">추천 코스 보기 →</text>
+</svg>

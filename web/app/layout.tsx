@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
-import TabBar from '@/components/TabBar';
+import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
   title: 'LOCAL STRIDE · 달리면서 여행하는 도시, 대구',
@@ -17,10 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
       </head>
       <body>
-        <div className="shell">
-          {children}
-          <TabBar />
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

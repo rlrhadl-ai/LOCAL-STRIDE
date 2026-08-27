@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
+import BannerCarousel from '@/components/BannerCarousel';
 import LiveBadge from '@/components/LiveBadge';
-import { api } from '@/lib/api';
-import type { Course, NearbyResult, PartnerOffer, Recommendation } from '@/lib/types';
+import { api, mediaUrl } from '@/lib/api';
+import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation } from '@/lib/types';
 
 const KMS = [3, 5, 7, 10];
 const THEMES = ['수변', '야경', '미식', '역사'];
@@ -18,6 +19,7 @@ export default function Home() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [nearby, setNearby] = useState<NearbyResult | null>(null);
   const [partners, setPartners] = useState<PartnerOffer[]>([]);
+  const [banners, setBanners] = useState<HomeBanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -37,11 +39,13 @@ export default function Home() {
       api.get<{ items: Course[] }>('/courses'),
       api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').catch(() => null),
       api.get<{ items: PartnerOffer[] }>('/partners').catch(() => ({ items: [] })),
-    ]).then(([courseResult, nearbyResult, partnerResult]) => {
+      api.get<{ items: HomeBanner[] }>('/banners').catch(() => ({ items: [] })),
+    ]).then(([courseResult, nearbyResult, partnerResult, bannerResult]) => {
       if (!alive) return;
       setCourses(courseResult.items);
       setNearby(nearbyResult);
       setPartners(partnerResult.items);
+      setBanners(bannerResult.items);
     }).catch(() => alive && setErr('홈 정보를 잠시 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
     return () => { alive = false; };
   }, []);
@@ -88,6 +92,7 @@ export default function Home() {
         </div>
         <button className="btn" type="button" disabled={!best} onClick={() => best && router.push(`/run/${best.course.slug}`)}>이 코스로 러닝 시작</button>
       </div>
+      <BannerCarousel items={banners} />
 
       <div className="section-title"><h2>달리며 만나는 수성구</h2><span>{nearby?.source === 'TOURAPI' ? '관광공사 공공데이터' : '저장 관광지 데이터'}</span></div>
       {attractions.length > 0 ? <div className="spot-scroller">
@@ -101,9 +106,9 @@ export default function Home() {
       <div className="section-title"><h2>러닝 후 누리는 로컬 혜택</h2><span>완주 리워드 파트너</span></div>
       <div className="partner-list">
         {partners.map((partner) => <article className={`partner-card ${partner.status === 'COMING_SOON' ? 'featured' : ''}`} key={partner.id}>
-          <div className="partner-icon" aria-hidden>{partner.status === 'COMING_SOON' ? 'R' : '₩'}</div>
+          <div className="partner-icon" aria-hidden>{partner.imageUrl ? <img src={mediaUrl(partner.imageUrl)} alt="" /> : partner.status === 'COMING_SOON' ? 'R' : '₩'}</div>
           <div className="partner-body">
-            <div className="partner-line"><span>{partner.category}</span><em>{partner.status === 'COMING_SOON' ? '제휴 준비 중' : '시연 혜택'}</em></div>
+            <div className="partner-line"><span>{partner.category}</span><em>{partner.status === 'COMING_SOON' ? '제휴 준비 중' : partner.status === 'ACTIVE' ? '완주 혜택' : '시연 혜택'}</em></div>
             <h3>{partner.name}</h3>
             <strong>{partner.offerTitle}</strong>
             {partner.addr && <p>{partner.addr}</p>}
@@ -117,7 +122,7 @@ export default function Home() {
       <div className="course-list">
         {courses.map((c, i) => (
           <div className="course" key={c.id}>
-            <div className={`thumb ${c.source === 'USER' ? 'user' : `t${i % 4}`}`} />
+            <div className={`thumb ${c.source === 'USER' ? 'user' : `t${i % 4}`}`}>{c.thumbnailUrl && <img src={mediaUrl(c.thumbnailUrl)} alt="" />}</div>
             <div><h4>{c.name}</h4><p>{(c.distanceM / 1000).toFixed(1)}km · {c.difficulty} · {c.themes.join('/')}{best?.course.id === c.id ? ' · ' : ''}{best?.course.id === c.id && <b style={{ color: 'var(--blue)' }}>AI 추천</b>}</p></div>
             <Link className="go" href={`/courses/${c.slug}`}>보기</Link>
           </div>
