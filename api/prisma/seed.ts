@@ -133,8 +133,6 @@ async function main() {
     create: { deviceId: 'seed-ops', nickname: '로컬스트라이드 호스트', avatarColor: '#E4B23A', bio: '대구의 숨은 러닝 코스를 함께 달리는 LOCAL STRIDE 로컬 호스트', homeArea: '대구 수성구', preferredPaceSec: 390 },
     update: { nickname: '로컬스트라이드 호스트', bio: '대구의 숨은 러닝 코스를 함께 달리는 LOCAL STRIDE 로컬 호스트', homeArea: '대구 수성구', preferredPaceSec: 390 },
   });
-  const eventStart = new Date(now.getFullYear(), now.getMonth() + 1, 15, 8, 0, 0);
-  await prisma.event.upsert({ where: { slug: '3km-challenge' }, create: { slug: '3km-challenge', title: '로컬 스트라이드 3KM CHALLENGE', description: '수성못 3km 러닝 챌린지. 라이브 랭킹 전광판·MY RECORD 카드 제공. (날짜는 확정 후 수정)', courseId: (await prisma.course.findUnique({ where: { slug: 'suseong-light-3k' } }))!.id, startsAt: eventStart, capacity: 200, feeKrw: 0, tshirt: true, status: 'OPEN' }, update: {} });
   const lightCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'suseong-light-3k' } });
   const foodCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'deuran-food-7k' } });
   const modernCourse = await prisma.course.findUniqueOrThrow({ where: { slug: 'modern-alley-10k' } });
@@ -142,6 +140,30 @@ async function main() {
     const kstNow = new Date(now.getTime() + 9 * 60 * 60_000);
     return new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate() + days, hour - 9, minute, 0));
   };
+  await prisma.event.upsert({
+    where: { slug: '3km-challenge' },
+    create: { slug: '3km-challenge', title: '로컬 스트라이드 3KM CHALLENGE', description: '수성못 3km 러닝 챌린지. 라이브 랭킹 전광판·MY RECORD 카드 제공. (날짜는 확정 후 수정)', courseId: lightCourse.id, startsAt: nextAt(31, 8), capacity: 200, feeKrw: 0, tshirt: true, status: 'OPEN' },
+    update: {},
+  });
+
+  const demoRunnerDefs = [
+    { deviceId: 'seed-community-dawn', nickname: '새벽물결', avatarColor: '#2F6FED', bio: '수성못 새벽 공기를 좋아해요.', homeArea: '대구 수성구', preferredPaceSec: 410 },
+    { deviceId: 'seed-community-deuran', nickname: '들안길토끼', avatarColor: '#F28C28', bio: '퇴근 후 미식런을 즐기는 직장인 러너예요.', homeArea: '대구 수성구', preferredPaceSec: 380 },
+    { deviceId: 'seed-community-sincheon', nickname: '신천바람', avatarColor: '#14A38B', bio: '신천 야경과 함께 가병게 달립니다.', homeArea: '대구 남구', preferredPaceSec: 360 },
+    { deviceId: 'seed-community-apsan', nickname: '앞산호흡', avatarColor: '#6B53D5', bio: '주말에는 앞산 트레일, 평일에는 시내 조깅.', homeArea: '대구 남구', preferredPaceSec: 430 },
+    { deviceId: 'seed-community-dalseo', nickname: '달서페이스', avatarColor: '#E4556C', bio: '천천히 길게 달리는 것을 좋아해요.', homeArea: '대구 달서구', preferredPaceSec: 450 },
+    { deviceId: 'seed-community-cheongna', nickname: '청라러너', avatarColor: '#D69A13', bio: '대구 골목의 이야기를 찾아 달립니다.', homeArea: '대구 중구', preferredPaceSec: 400 },
+    { deviceId: 'seed-community-geumho', nickname: '금호강롱런', avatarColor: '#1677C8', bio: '일요일 금호강 롱런 파트너를 찾고 있어요.', homeArea: '대구 북구', preferredPaceSec: 390 },
+    { deviceId: 'seed-community-starlight', nickname: '수성별빛', avatarColor: '#8C5AE8', bio: '수성못 선셋과 야간 러닝을 좋아해요.', homeArea: '대구 수성구', preferredPaceSec: 420 },
+    { deviceId: 'seed-community-first5k', nickname: '대구첫런', avatarColor: '#37A66C', bio: '5K 완주를 목표로 천천히 달리는 중입니다.', homeArea: '대구 동구', preferredPaceSec: 480 },
+    { deviceId: 'seed-community-downtown', nickname: '동성로질주', avatarColor: '#EF6C45', bio: '퇴근런과 번개런이면 언제든 환영이에요.', homeArea: '대구 중구', preferredPaceSec: 370 },
+  ];
+  const demoRunners = [];
+  for (const runner of demoRunnerDefs) demoRunners.push(await prisma.user.upsert({
+    where: { deviceId: runner.deviceId },
+    create: runner,
+    update: { nickname: runner.nickname, avatarColor: runner.avatarColor, bio: runner.bio, homeArea: runner.homeArea, preferredPaceSec: runner.preferredPaceSec },
+  }));
   const programDefs = [
     { slug: 'suseong-morning-run', title: '수성못 모닝 블루런', description: '대구 로컬 호스트와 수성못의 아침을 여는 초보 환영 3K 러닝입니다.', kind: 'MORNING' as const, place: '수성못 수변 데크', paceSec: 420, courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), capacity: 12, feeKrw: 0 },
     { slug: 'deuran-after-work-run', title: '들안길 퇴근 미식런', description: '퇴근 후 수성못에서 출발해 들안길의 야경과 로컬 미식 거리를 만나는 7K 러닝입니다.', kind: 'AFTER_WORK' as const, place: '수성못 상화동산 입구', paceSec: 390, courseId: foodCourse.id, startsAt: nextAt(4, 19, 30), capacity: 10, feeKrw: 5000 },
@@ -152,12 +174,77 @@ async function main() {
     create: { ...program, hostId: ops.id, status: 'OPEN', tshirt: false },
     update: {},
   });
-  let crew = await prisma.crew.findFirst({ where: { name: '수성못 아침 크루' } });
-  if (!crew) crew = await prisma.crew.create({ data: { name: '수성못 아침 크루', description: '평일 아침 6시 반, 수성못 한 바퀴. 초보 환영, 페이스 6~8분.', lifestyle: ['아침', '초보환영', '직장인'], paceMinSec: 360, paceMaxSec: 480, area: '대구 수성구', ownerId: ops.id, members: { create: { userId: ops.id, role: 'OWNER' } }, runs: { create: { courseId: blueCourse.id, startsAt: new Date(now.getTime() + 2 * 86400000), note: '수변 데크 앞 집결' } } } });
-  const post = await prisma.matePost.findFirst({ where: { authorId: ops.id } });
-  if (!post) await prisma.matePost.create({ data: { authorId: ops.id, type: 'PACEMAKER', paceSec: 372, meetAt: new Date(now.getTime() + 3 * 86400000), place: '수성못 수변 데크', slots: 6, body: "6'12\" 페이스로 블루런 5K 같이 달릴 페이스메이커 모집" } });
 
-  console.log(`seeded: blue run ${(blue.total / 1000).toFixed(2)}km, courses ${courseDefs.length}, pois ${poiDefs.length}, medals ${medals.length}`);
+  const raceDefs = [
+    { slug: 'suseong-sunset-5k-preview', title: '수성못 선셋 5K · PREVIEW', description: '[MVP 시범 대회] 수성못의 노을과 음악분수를 지나는 초보 환영 런. 실제 일정과 혜택은 운영 확정 후 공개됩니다.', place: '수성못 상화동산 입구', courseId: blueCourse.id, startsAt: nextAt(17, 18, 30), capacity: 180, feeKrw: 12000, tshirt: true, entrants: [0, 1, 2, 7, 8, 9] },
+    { slug: 'deuran-night-7k-preview', title: '들안길 나이트 7K · PREVIEW', description: '[MVP 시범 대회] 수성못에서 출발해 들안길 로컬 상권과 연결하는 야경 런. 제휴 쿠폰은 시범 운영 후 확정합니다.', place: '수성못 두산오거리 광장', courseId: foodCourse.id, startsAt: nextAt(24, 19, 30), capacity: 120, feeKrw: 18000, tshirt: false, entrants: [1, 2, 4, 5, 7, 9] },
+    { slug: 'daegu-alley-10k-preview', title: '대구 골목 10K · PREVIEW', description: '[MVP 시범 대회] 청라언덕·계산성당·약령시를 이야기로 잇는 대구 로컬 히스토리 런. 코스 안전 검증 후 정식 오픈합니다.', place: '청라언덕 선교사 주택 앞', courseId: modernCourse.id, startsAt: nextAt(38, 8, 30), capacity: 250, feeKrw: 25000, tshirt: true, entrants: [0, 2, 3, 5, 6, 9] },
+    { slug: 'suseong-family-3k-preview', title: '수성못 패밀리 3K · PREVIEW', description: '[MVP 시범 대회] 첫 러너와 가족이 함께 달리는 수성못 평지 코스. 행사 신고·안전 요원 확보 후 정식 접수합니다.', place: '수성못 수변 데크', courseId: lightCourse.id, startsAt: nextAt(45, 9), capacity: 100, feeKrw: 5000, tshirt: false, entrants: [3, 4, 7, 8] },
+  ];
+  for (const race of raceDefs) {
+    const { entrants, ...data } = race;
+    const event = await prisma.event.upsert({
+      where: { slug: race.slug },
+      create: { ...data, kind: 'RACE', hostId: ops.id, status: 'OPEN' },
+      update: {},
+    });
+    for (let entrantIndex = 0; entrantIndex < entrants.length; entrantIndex += 1) {
+      const runner = demoRunners[entrants[entrantIndex]];
+      await prisma.eventRegistration.upsert({
+        where: { eventId_userId: { eventId: event.id, userId: runner.id } },
+        create: { eventId: event.id, userId: runner.id, bib: 101 + entrantIndex, tshirtSize: race.tshirt ? ['S', 'M', 'L'][entrantIndex % 3] : null, paid: race.feeKrw === 0 },
+        update: {},
+      });
+    }
+  }
+
+  const crewDefs = [
+    { name: '수성못 아침 크루', description: '[MVP 시범 크루] 평일 아침 6시 반, 수성못 한 바퀴. 첫 러너도 쉽게 함께해요.', lifestyle: ['아침', '초보환영', '직장인'], paceMinSec: 390, paceMaxSec: 480, area: '대구 수성구', ownerIndex: 0, members: [1, 7, 8], courseId: lightCourse.id, startsAt: nextAt(2, 6, 30), note: '[시범] 상화동산 입구 집결 · 스트레칭 10분' },
+    { name: '신천 퇴근 러너스', description: '[MVP 시범 크루] 퇴근 후 신천 야경을 따라 5~7K를 달리는 직장인 크루예요.', lifestyle: ['저녁', '직장인'], paceMinSec: 340, paceMaxSec: 420, area: '대구 남구', ownerIndex: 2, members: [1, 5, 9], courseId: blueCourse.id, startsAt: nextAt(3, 19, 40), note: '[시범] 신천 수성교 하부 집결 · 6K 복귀 코스' },
+    { name: '앞산 주말 트레일', description: '[MVP 시범 크루] 등산로 입구부터 천천히 오르며 안전과 호흡을 우선하는 트레일 모임입니다.', lifestyle: ['주말'], paceMinSec: 420, paceMaxSec: 600, area: '대구 남구', ownerIndex: 3, members: [0, 4, 6], courseId: null, startsAt: nextAt(5, 8), note: '[시범] 앞산빨래터 입구 집결 · 안전 장비 필수' },
+    { name: '대구 초보 5K 클럽', description: '[MVP 시범 크루] 걷기와 달리기를 반복하며 첫 5K 완주를 함께 준비해요.', lifestyle: ['초보환영', '주말'], paceMinSec: 450, paceMaxSec: 600, area: '대구 동구', ownerIndex: 8, members: [0, 4, 7], courseId: lightCourse.id, startsAt: nextAt(6, 9, 30), note: '[시범] 동촌유원지 광장 집결 · 런워 40분' },
+    { name: '달서 나이트 스트라이드', description: '[MVP 시범 크루] 월광수변공원을 중심으로 진행하는 여유로운 저녁 런입니다.', lifestyle: ['저녁', '초보환영', '직장인'], paceMinSec: 400, paceMaxSec: 510, area: '대구 달서구', ownerIndex: 4, members: [2, 8, 9], courseId: lightCourse.id, startsAt: nextAt(4, 20), note: '[시범] 월광수변공원 주차장 옆 집결 · 4K 조깅' },
+    { name: '금호강 롱런 클럽', description: '[MVP 시범 크루] 일요일 아침 금호강 강바람을 맞으며 10K 이상을 함께 달려요.', lifestyle: ['아침', '주말'], paceMinSec: 350, paceMaxSec: 430, area: '대구 북구', ownerIndex: 6, members: [1, 2, 3, 5], courseId: modernCourse.id, startsAt: nextAt(7, 7), note: '[시범] 침산교 하부 집결 · 보급수 준비' },
+  ];
+  for (const definition of crewDefs) {
+    let crew = await prisma.crew.findFirst({ where: { name: definition.name } });
+    if (!crew) crew = await prisma.crew.create({
+      data: { name: definition.name, description: definition.description, lifestyle: definition.lifestyle, paceMinSec: definition.paceMinSec, paceMaxSec: definition.paceMaxSec, area: definition.area, ownerId: demoRunners[definition.ownerIndex].id },
+    });
+    if (crew.description === '평일 아침 6시 반, 수성못 한 바퀴. 초보 환영, 페이스 6~8분.') crew = await prisma.crew.update({ where: { id: crew.id }, data: { description: definition.description } });
+    await prisma.crewMember.upsert({ where: { crewId_userId: { crewId: crew.id, userId: crew.ownerId } }, create: { crewId: crew.id, userId: crew.ownerId, role: 'OWNER' }, update: {} });
+    for (const memberIndex of definition.members) {
+      const runner = demoRunners[memberIndex];
+      if (runner.id !== crew.ownerId) await prisma.crewMember.upsert({ where: { crewId_userId: { crewId: crew.id, userId: runner.id } }, create: { crewId: crew.id, userId: runner.id }, update: {} });
+    }
+    const scheduled = await prisma.crewRun.findFirst({ where: { crewId: crew.id, note: definition.note } });
+    if (!scheduled) await prisma.crewRun.create({ data: { crewId: crew.id, courseId: definition.courseId, startsAt: definition.startsAt, note: definition.note } });
+    else if (scheduled.startsAt < now) await prisma.crewRun.update({ where: { id: scheduled.id }, data: { startsAt: definition.startsAt } });
+  }
+
+  const mateDefs = [
+    { authorIndex: 0, type: 'PACEMAKER' as const, paceSec: 410, meetAt: nextAt(2, 6, 30), place: '수성못 상화동산 입구', slots: 5, body: '[시범 모집] 첫 5K 완주를 위한 6\'50\" 안정 페이싱', applicants: [7, 8] },
+    { authorIndex: 1, type: 'MATE' as const, paceSec: 385, meetAt: nextAt(3, 19, 30), place: '들안길 두산오거리', slots: 4, body: '[시범 모집] 퇴근 후 6K 달리고 로컬 식당에서 가병게 식사해요', applicants: [2, 9] },
+    { authorIndex: 2, type: 'PACEMAKER' as const, paceSec: 360, meetAt: nextAt(4, 20), place: '신천 수성교 하부', slots: 6, body: '[시범 모집] 신천 야경 7K, 6\'00\" 페이스를 맞춰드려요', applicants: [1, 5, 7] },
+    { authorIndex: 3, type: 'MATE' as const, paceSec: 480, meetAt: nextAt(5, 8), place: '앞산빨래터 입구', slots: 5, body: '[시범 모집] 러닝과 등산 사이, 안전하게 새벽 트레일 함께해요', applicants: [4, 6] },
+    { authorIndex: 4, type: 'MATE' as const, paceSec: 450, meetAt: nextAt(4, 20), place: '월광수변공원 정문', slots: 4, body: '[시범 모집] 대화 가능한 7\'30\" 페이스로 4K 조깅해요', applicants: [8] },
+    { authorIndex: 5, type: 'PACEMAKER' as const, paceSec: 400, meetAt: nextAt(6, 9), place: '청라언덕 서축정원', slots: 8, body: '[시범 모집] 근대골목 이야기를 들으며 달리는 로컬 스토리 런', applicants: [0, 3, 9] },
+    { authorIndex: 6, type: 'PACEMAKER' as const, paceSec: 390, meetAt: nextAt(7, 7), place: '금호강 침산교 하부', slots: 6, body: '[시범 모집] 일요일 12K 롱런, 마지막 2K만 속도를 올려요', applicants: [1, 2, 3] },
+    { authorIndex: 8, type: 'MATE' as const, paceSec: 500, meetAt: nextAt(6, 10), place: '동촌유원지 광장', slots: 3, body: '[시범 모집] 러닝을 처음 시작한 분끼리 3K 런워크로 달려요', applicants: [0] },
+  ];
+  for (const definition of mateDefs) {
+    const author = demoRunners[definition.authorIndex];
+    let post = await prisma.matePost.findFirst({ where: { authorId: author.id, body: definition.body } });
+    if (!post) post = await prisma.matePost.create({ data: { authorId: author.id, type: definition.type, paceSec: definition.paceSec, meetAt: definition.meetAt, place: definition.place, slots: definition.slots, body: definition.body } });
+    else if (post.meetAt < now) post = await prisma.matePost.update({ where: { id: post.id }, data: { meetAt: definition.meetAt, status: 'OPEN' } });
+    for (const applicantIndex of definition.applicants) await prisma.mateApplication.upsert({
+      where: { postId_userId: { postId: post.id, userId: demoRunners[applicantIndex].id } },
+      create: { postId: post.id, userId: demoRunners[applicantIndex].id },
+      update: {},
+    });
+  }
+
+  console.log(`seeded: blue run ${(blue.total / 1000).toFixed(2)}km, courses ${courseDefs.length}, crews ${crewDefs.length}, mates ${mateDefs.length}, races ${raceDefs.length}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());

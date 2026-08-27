@@ -433,6 +433,120 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
 .reward-card button { border: 0; border-radius: 12px; background: #fff; color: var(--navy); font-weight: 800; padding: 10px 12px; font-size: 12.5px; white-space: nowrap; }
 .record-canvas { width: 100%; height: auto; border-radius: 14px; display: block; margin: 10px 0; box-shadow: 0 10px 24px rgba(20,33,61,.15); }
 
+/* 함께 달리기 · 러닝 메이트 · 로컬 대회 */
+.community-page { padding-right: 16px; padding-left: 16px; }
+.community-eyebrow { display: block; color: #8CB2FF; font-size: 9px; font-weight: 900; letter-spacing: .13em; }
+.community-hero, .race-hero, .mate-hero { position: relative; isolation: isolate; overflow: hidden; border-radius: 24px; color: #fff; box-shadow: 0 18px 38px rgba(10,29,82,.18); }
+.community-hero { padding: 22px 20px; background: linear-gradient(142deg, #071945, #103A8A 64%, #1D62E4); }
+.community-hero::after { content: ""; position: absolute; z-index: -1; right: -70px; top: -70px; width: 210px; height: 210px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,.04), 0 0 0 60px rgba(255,255,255,.025); }
+.community-hero h2, .race-hero h2, .mate-hero h2 { margin: 12px 0 7px; font-size: 23px; line-height: 1.27; letter-spacing: -.045em; word-break: keep-all; }
+.community-hero h2 em { color: #FFD76A; font-style: normal; }
+.community-hero p, .race-hero p, .mate-hero p { max-width: 330px; margin: 0; color: #D9E6FF; font-size: 11.5px; line-height: 1.6; word-break: keep-all; }
+.community-jumps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 20px; }
+.community-jump { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; align-items: center; gap: 8px; min-width: 0; padding: 11px 10px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 7px 18px rgba(20,33,61,.05); }
+.community-jump:hover, .community-card:hover, .race-card:hover { border-color: #B8CBF5; transform: translateY(-1px); }
+.community-jump-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 900; }
+.community-jump-icon.race { background: var(--gold-soft); color: #8A6410; }
+.community-jump > span:nth-child(2) { min-width: 0; }
+.community-jump strong, .community-jump small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.community-jump strong { font-size: 12px; }
+.community-jump small { margin-top: 3px; color: var(--muted); font-size: 9.5px; }
+.community-jump > b, .community-arrow { color: #A4AEC3; font-size: 15px; }
+.community-title { align-items: flex-end; margin: 19px 2px 9px; }
+.community-title > div { display: grid; gap: 4px; }
+.community-title h2 { font-size: 17px; letter-spacing: -.025em; }
+.community-title .community-eyebrow { color: var(--blue); font-size: 8px; }
+.community-filters { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px 11px; padding: 0 16px 4px; scrollbar-width: none; }
+.community-filters::-webkit-scrollbar { display: none; }
+.community-filters .pill { flex: 0 0 auto; }
+.community-list, .race-list, .mate-list { display: grid; gap: 10px; }
+.community-card { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; align-items: start; gap: 12px; padding: 15px 12px; border: 1px solid var(--line); border-radius: 19px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); transition: .2s ease; }
+.community-mark { width: 52px; height: 58px; display: grid; place-items: center; border-radius: 15px; background: linear-gradient(145deg, #3675F0, #103988); color: #fff; font-size: 18px; font-weight: 900; box-shadow: inset 0 -18px 30px rgba(3,17,57,.18); }
+.tone-1 { background: linear-gradient(145deg, #27A8EC, #1B5BDF); }
+.tone-2 { background: linear-gradient(145deg, #FFAF24, #EC642D); }
+.tone-3 { background: linear-gradient(145deg, #8258EC, #152A6D); }
+.community-card-main, .race-main { min-width: 0; }
+.community-card-tags, .race-tags, .mate-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.community-area { margin-left: auto; color: var(--muted); font-size: 10.5px; font-weight: 700; }
+.community-card h3 { margin: 7px 0 4px; font-size: 16px; line-height: 1.3; letter-spacing: -.02em; }
+.community-card-main > p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; word-break: keep-all; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.community-stats { display: grid; grid-template-columns: 1.05fr .58fr 1fr; gap: 7px; margin-top: 12px; }
+.community-stats span { min-width: 0; padding-right: 6px; border-right: 1px solid var(--line); }
+.community-stats span:last-child { border: 0; }
+.community-stats b, .community-stats small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.community-stats b { color: var(--navy); font-size: 10.5px; }
+.community-stats small { margin-top: 3px; color: #929BB0; font-size: 8.5px; }
+.community-next { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 11px; padding: 8px 9px; border-radius: 10px; background: #F4F7FD; color: var(--navy); }
+.community-next span { color: var(--blue); font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.community-next b { flex: 0 0 auto; font-size: 10px; }
+.community-next small { overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.community-arrow { align-self: center; }
+.community-note { margin: 13px 2px 0; padding: 11px 12px; border: 1px solid #E6EAF2; border-radius: 12px; background: #F9FAFC; }
+
+.race-hero { padding: 22px 20px 18px; background: linear-gradient(145deg, #24145E, #123D94 62%, #1E67E8); }
+.race-hero::after { content: "FINISH"; position: absolute; z-index: -1; right: -7px; bottom: 16px; color: rgba(255,255,255,.055); font-size: 52px; font-weight: 900; letter-spacing: -.06em; transform: rotate(-7deg); }
+.race-hero > div { display: flex; gap: 22px; margin-top: 17px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.14); }
+.race-hero > div span { color: #BFD2FA; font-size: 9.5px; }
+.race-hero > div b { display: block; margin-bottom: 2px; color: #fff; font-size: 19px; }
+.race-card { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; align-items: start; gap: 12px; padding: 14px 11px 14px 12px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); transition: .2s ease; }
+.race-date { width: 58px; min-height: 76px; display: grid; place-items: center; align-content: center; border-radius: 15px; background: linear-gradient(145deg, #3675F0, #103988); color: #fff; box-shadow: inset 0 -20px 30px rgba(3,17,57,.18); }
+.race-date span { font-size: 8.5px; font-weight: 900; letter-spacing: .08em; }
+.race-date b { margin: 1px 0 -2px; font-size: 27px; line-height: 1; }
+.race-date small { color: #D8E5FF; font-size: 9px; }
+.race-dday { margin-left: auto; color: var(--blue); font-family: var(--mono); font-size: 9.5px; font-weight: 800; }
+.race-main h3 { margin: 7px 0 5px; font-size: 17px; line-height: 1.3; letter-spacing: -.025em; }
+.race-copy { display: -webkit-box; overflow: hidden; margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.48; word-break: keep-all; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.race-facts { display: grid; gap: 5px; margin: 11px 0 10px; padding: 10px; border-radius: 11px; background: #F6F8FC; }
+.race-facts div { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 7px; }
+.race-facts dt { color: #98A0B3; font-size: 9px; }
+.race-facts dd { overflow: hidden; margin: 0; color: var(--ink); font-size: 9.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.race-capacity { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 9.5px; }
+.race-capacity b { color: var(--ink); }
+.race-capacity strong { color: var(--blue); font-size: 11px; }
+.race-progress { height: 4px; overflow: hidden; margin-top: 7px; border-radius: 4px; background: var(--line); }
+.race-progress i { display: block; height: 100%; min-width: 5px; border-radius: inherit; background: linear-gradient(90deg, var(--blue), #63A2FF); }
+
+.mate-hero { padding: 21px 20px; background: linear-gradient(140deg, #092F43, #086C78 62%, #0B9B83); }
+.mate-hero::after { content: ""; position: absolute; z-index: -1; right: -40px; top: 22px; width: 136px; height: 84px; border: 2px dashed rgba(255,255,255,.18); border-radius: 50%; transform: rotate(-17deg); }
+.mate-hero .community-eyebrow { color: #9BE7D9; }
+.mate-filters { margin-top: 12px; margin-bottom: 7px; }
+.mate-form { margin: 4px 0 13px; padding: 17px; border-radius: 20px; box-shadow: 0 14px 28px rgba(20,33,61,.08); }
+.mate-form h3 { margin: 4px 0 2px; font-size: 17px; }
+.mate-form .community-eyebrow { color: var(--blue); }
+.mate-message { margin: 8px 0; padding: 10px 12px; border-radius: 11px; background: var(--blue-soft); color: var(--blue-deep); font-weight: 700; }
+.mate-card { padding: 15px; border: 1px solid var(--line); border-radius: 19px; background: #fff; box-shadow: 0 8px 22px rgba(20,33,61,.045); }
+.mate-author { display: flex; align-items: center; gap: 9px; }
+.mate-avatar { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 900; box-shadow: inset 0 -8px 13px rgba(3,17,57,.15); }
+.mate-author > span:last-child { min-width: 0; }
+.mate-author b, .mate-author small { display: block; }
+.mate-author b { font-size: 12px; }
+.mate-author small { margin-top: 2px; color: var(--muted); font-size: 9.5px; }
+.mate-tags { margin-top: 12px; }
+.mate-card > h3 { margin: 8px 0 11px; font-size: 15px; line-height: 1.45; letter-spacing: -.02em; word-break: keep-all; }
+.mate-route { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 11px; border-radius: 11px; background: #F6F8FC; }
+.mate-route span { min-width: 0; }
+.mate-route small, .mate-route b { display: block; }
+.mate-route small { margin-bottom: 3px; color: #929BB0; font-size: 8.5px; }
+.mate-route b { overflow: hidden; color: var(--navy); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.mate-route span:last-child { min-width: 78px; text-align: right; }
+.mate-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 11px; color: var(--muted); font-size: 10px; }
+.mate-footer span b { color: var(--ink); }
+.mate-footer .go { flex: 0 0 auto; padding: 8px 13px; border: 1px solid #CCD9F4; border-radius: 10px; background: #fff; color: var(--blue); font-size: 11px; font-weight: 800; }
+.mate-footer .go.on { border-color: var(--blue); background: var(--blue); color: #fff; }
+.mate-footer .go:disabled { cursor: not-allowed; opacity: .65; }
+
+@media (max-width: 380px) {
+  .community-jumps { grid-template-columns: 1fr; }
+  .community-card { grid-template-columns: 44px minmax(0,1fr); }
+  .community-mark { width: 44px; height: 50px; }
+  .community-card > .community-arrow, .race-card > .community-arrow { display: none; }
+  .race-card { grid-template-columns: 52px minmax(0,1fr); }
+  .race-date { width: 52px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-jump, .community-card, .race-card { transition: none; }
+}
+
 /* 목록 공통 */
 .list-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .list-item .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-weight: 900; font-size: 14px; }
