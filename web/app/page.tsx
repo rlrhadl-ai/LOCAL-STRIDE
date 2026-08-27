@@ -24,18 +24,12 @@ export default function Home() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      api.get<{ items: Course[] }>('/courses').catch(() => ({ items: [] })),
-      api.get<Recommendation>('/recommend?km=5&themes=%EC%88%98%EB%B3%80%2C%EC%95%BC%EA%B2%BD').catch(() => null),
-      api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').catch(() => null),
-      api.get<{ items: PartnerOffer[] }>('/partners').catch(() => ({ items: [] })),
-      api.get<{ items: HomeBanner[] }>('/banners').catch(() => ({ items: [] })),
-      api.get<{ items: RunProgram[] }>('/programs?limit=3').catch(() => ({ items: [] })),
-    ]).then(([courseResult, recommendation, nearbyResult, partnerResult, bannerResult, programResult]) => {
-      if (!alive) return;
-      setCourses(courseResult.items); setRec(recommendation); setNearby(nearbyResult);
-      setPartners(partnerResult.items); setBanners(bannerResult.items); setPrograms(programResult.items);
-    });
+    api.get<{ items: Course[] }>('/courses').then((result) => alive && setCourses(result.items)).catch(() => undefined);
+    api.get<Recommendation>('/recommend?km=5&themes=%EC%88%98%EB%B3%80%2C%EC%95%BC%EA%B2%BD').then((result) => alive && setRec(result)).catch(() => undefined);
+    api.get<{ items: RunProgram[] }>('/programs?limit=3').then((result) => alive && setPrograms(result.items)).catch(() => undefined);
+    api.get<{ items: PartnerOffer[] }>('/partners').then((result) => alive && setPartners(result.items)).catch(() => undefined);
+    api.get<{ items: HomeBanner[] }>('/banners').then((result) => alive && setBanners(result.items)).catch(() => undefined);
+    api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').then((result) => alive && setNearby(result)).catch(() => undefined);
     return () => { alive = false; };
   }, []);
 
