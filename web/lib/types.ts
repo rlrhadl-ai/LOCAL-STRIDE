@@ -6,6 +6,8 @@ export interface Course { id: string; slug: string; name: string; description: s
 export interface Weather { source: string; airSource: string; temp: number; humidity: number; windMs: number; rainType: string; sky: string; pm10: number | null; pm10Grade: string; sunset: string; error?: string }
 export interface Recommendation { weather: Weather; input: { km: number; themes: string[]; hourKst: number }; best: { course: Pick<Course, 'id' | 'slug' | 'name' | 'distanceM' | 'difficulty' | 'themes' | 'estMinutes' | 'source'>; score: number; reasons: string[] } | null; candidates: { course: any; score: number; reasons: string[] }[] }
 export interface NearbyResult { source: 'TOURAPI' | 'SEED'; fetchedMs: number; endpoint: string; items: Poi[]; raw?: unknown; error?: string }
+export interface PartnerOffer { id: string; name: string; category: string; addr: string | null; offerTitle: string; discountKrw: number | null; validUntil: string | null; status: 'COMING_SOON' | 'DEMO'; source: 'CURATED' | 'SEED' }
+export interface PartnerResult { items: PartnerOffer[] }
 export interface RunTrackPoint { lat: number; lng: number; t: number; accuracy?: number }
 export interface Run { id: string; courseId: string; mode: 'DEMO' | 'LIVE'; status: string; startedAt: string; distanceM: number; durationSec: number }
 export interface ActiveRun extends Run { track: RunTrackPoint[] | null; course: Course; checkins: { checkpointId: string }[] }

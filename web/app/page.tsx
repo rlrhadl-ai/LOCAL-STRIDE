@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import LiveBadge from '@/components/LiveBadge';
 import { api } from '@/lib/api';
-import type { Course, Recommendation } from '@/lib/types';
+import type { Course, NearbyResult, PartnerOffer, Recommendation } from '@/lib/types';
 
 const KMS = [3, 5, 7, 10];
 const THEMES = ['수변', '야경', '미식', '역사'];
@@ -16,21 +16,40 @@ export default function Home() {
   const [themes, setThemes] = useState<string[]>(['수변', '야경']);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [nearby, setNearby] = useState<NearbyResult | null>(null);
+  const [partners, setPartners] = useState<PartnerOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    Promise.all([api.get<Recommendation>(`/recommend?km=${km}&themes=${encodeURIComponent(themes.join(','))}`), api.get<{ items: Course[] }>('/courses')])
-      .then(([r, c]) => { if (!alive) return; setRec(r); setCourses(c.items); setErr(''); })
-      .catch((e) => alive && setErr(`API에 연결할 수 없어요 — ${e.message}. api 폴더에서 npm run dev 가 켜져 있는지 확인`))
+    api.get<Recommendation>(`/recommend?km=${km}&themes=${encodeURIComponent(themes.join(','))}`)
+      .then((r) => { if (!alive) return; setRec(r); setErr(''); })
+      .catch(() => alive && setErr('추천 정보를 잠시 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [km, themes]);
 
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      api.get<{ items: Course[] }>('/courses'),
+      api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').catch(() => null),
+      api.get<{ items: PartnerOffer[] }>('/partners').catch(() => ({ items: [] })),
+    ]).then(([courseResult, nearbyResult, partnerResult]) => {
+      if (!alive) return;
+      setCourses(courseResult.items);
+      setNearby(nearbyResult);
+      setPartners(partnerResult.items);
+    }).catch(() => alive && setErr('홈 정보를 잠시 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
+    return () => { alive = false; };
+  }, []);
+
   const wx = rec?.weather;
   const best = rec?.best;
+  const attractions = (nearby?.items ?? []).filter((item) => [12, 14, 28].includes(item.contentTypeId)).slice(0, 4);
+  const placeKind = (contentTypeId: number) => ({ 12: '관광지', 14: '문화', 28: '레포츠' }[contentTypeId] ?? '로컬 스폿');
   return (
     <main className="page">
       <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg></Link>} />
@@ -54,14 +73,45 @@ export default function Home() {
 
       <div className="section-title"><h2>AI 맞춤 코스 추천</h2><span>추천 이유까지 함께</span></div>
       <div className="ai-card" style={{ opacity: loading ? .7 : 1 }}>
-        <span className="ai-badge">✦ AI 추천</span>
+        <div className="ai-top"><span className="ai-badge">✦ AI 추천</span>{best && <span className="ai-score">추천 점수 <b>{best.score}</b></span>}</div>
         <h3>{best?.course.name ?? '추천 계산 중…'}</h3>
-        <div className="sub">{best ? `${(best.course.distanceM / 1000).toFixed(1)}km · ${best.course.difficulty} · 약 ${best.course.estMinutes}분 · 점수 ${best.score}` : ''}</div>
+        <p className="ai-copy">선택한 러닝 조건과 현재 날씨를 함께 분석했어요.</p>
+        {best && <div className="ai-metrics">
+          <div><span>거리</span><strong>{(best.course.distanceM / 1000).toFixed(1)}<small>km</small></strong></div>
+          <div><span>난이도</span><strong>{best.course.difficulty}</strong></div>
+          <div><span>예상 시간</span><strong>{best.course.estMinutes}<small>분</small></strong></div>
+        </div>}
         <div className="tags">{best?.course.themes.map((t) => <span key={t} className="tag ghost">{t}</span>)}{best?.course.source === 'USER' && <span className="tag ghost">사용자 코스</span>}</div>
-        <div className="reasons-head">추천 이유</div>
-        <ul className="reasons">{best?.reasons.map((r, i) => <li key={i}><span /><span>{r}</span></li>)}</ul>
+        <div className="reason-box">
+          <div className="reasons-head">이 코스를 추천하는 이유</div>
+          <ul className="reasons">{best?.reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>
+        </div>
         <button className="btn" type="button" disabled={!best} onClick={() => best && router.push(`/run/${best.course.slug}`)}>이 코스로 러닝 시작</button>
       </div>
+
+      <div className="section-title"><h2>달리며 만나는 수성구</h2><span>관광공사 공공데이터</span></div>
+      {attractions.length > 0 ? <div className="spot-scroller">
+        {attractions.map((spot) => <article className="spot-card" key={spot.contentId ?? `${spot.title}-${spot.lat}`}>
+          <div className="spot-photo">{spot.firstImage ? <img src={spot.firstImage} alt="" /> : <span aria-hidden>LOCAL<br />SPOT</span>}<em>{placeKind(spot.contentTypeId)}</em></div>
+          <div className="spot-body"><h3>{spot.title}</h3><p>{spot.overview || spot.addr1 || '러닝 코스 가까이에서 만나는 수성구의 로컬 명소예요.'}</p>{spot.dist != null && <span className="spot-distance">수성못에서 약 {(spot.dist / 1000).toFixed(1)}km</span>}</div>
+        </article>)}
+      </div> : <div className="card empty-home">주변 관광지를 불러오는 중이에요.</div>}
+      <div className="source-row"><LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.source === 'TOURAPI' ? 'TourAPI' : '저장 관광지'} /><span>위치·이미지는 제공 기관 정보에 따라 달라질 수 있어요.</span></div>
+
+      <div className="section-title"><h2>러닝 후 누리는 로컬 혜택</h2><span>완주 리워드 파트너</span></div>
+      <div className="partner-list">
+        {partners.map((partner) => <article className={`partner-card ${partner.status === 'COMING_SOON' ? 'featured' : ''}`} key={partner.id}>
+          <div className="partner-icon" aria-hidden>{partner.status === 'COMING_SOON' ? 'R' : '₩'}</div>
+          <div className="partner-body">
+            <div className="partner-line"><span>{partner.category}</span><em>{partner.status === 'COMING_SOON' ? '제휴 준비 중' : '시연 혜택'}</em></div>
+            <h3>{partner.name}</h3>
+            <strong>{partner.offerTitle}</strong>
+            {partner.addr && <p>{partner.addr}</p>}
+          </div>
+        </article>)}
+        {partners.length === 0 && <div className="card empty-home">로컬 파트너 혜택을 준비하고 있어요.</div>}
+      </div>
+      <p className="benefit-note">러너스테이의 할인율은 제휴 확정 후 공개됩니다. 시연 혜택은 실제 사용 전 매장 확인이 필요해요.</p>
 
       <div className="section-title"><h2>코스</h2><Link href="/courses/new">+ 직접 만들기</Link></div>
       <div className="course-list">
