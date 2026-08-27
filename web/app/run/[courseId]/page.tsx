@@ -1,12 +1,12 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import AgentLog from '@/components/AgentLog';
 import LiveBadge from '@/components/LiveBadge';
 import { api } from '@/lib/api';
 import { setVoice, speak, voiceOn } from '@/lib/speech';
-import { useRunEngine, type Mode } from '@/lib/useRunEngine';
+import { useRunEngine } from '@/lib/useRunEngine';
 import { fmtKm, fmtPace, fmtTime, type Course } from '@/lib/types';
 
 const RunMap = dynamic(() => import('@/components/RunMap'), { ssr: false });
@@ -15,36 +15,31 @@ export default function RunPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
-  const [mode, setMode] = useState<Mode>('DEMO');
-  const [speed, setSpeed] = useState(1);
   const [voice, setV] = useState(true);
   const [question, setQ] = useState('');
   const [asking, setAsking] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
-  const { s, start, togglePause, finish, nextCheckpoint, total, closePush, log } = useRunEngine(course, mode, speed);
-  const started = useRef(false);
+  const { s, start, togglePause, finish, closePush, log } = useRunEngine(course, 'LIVE', 1);
 
   useEffect(() => { api.get<Course>(`/courses/${courseId}`).then(setCourse).catch(() => setCourse(null)); }, [courseId]);
   useEffect(() => { if (s.status === 'finished' && s.runId) router.push(`/finish/${s.runId}`); }, [s.status, s.runId, router]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input, textarea')) return;
-      if (e.key === 'ArrowRight') { e.preventDefault(); nextCheckpoint(); }
-      else if (e.key === ' ') { e.preventDefault(); s.status === 'idle' ? begin() : togglePause(); }
+      if (e.key === ' ') { e.preventDefault(); ['idle', 'error'].includes(s.status) ? begin() : togglePause(); }
       else if (e.key === 'f' || e.key === 'F') void finish();
       else if (e.key === 'm' || e.key === 'M') toggleVoice();
-      else if (['1', '2', '4'].includes(e.key)) setSpeed(Number(e.key));
     };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   });
 
-  const begin = () => { if (started.current) return; started.current = true; void start(); };
+  const begin = () => { if (s.status === 'starting' || s.status === 'running') return; void start(); };
   const toggleVoice = () => { const v = !voiceOn(); setVoice(v); setV(v); };
   const cps = course?.checkpoints ?? [];
   const nextCp = cps[Math.min(s.nextCp, cps.length - 1)];
-  const nextDist = nextCp ? Math.max(0, Math.round(mode === 'DEMO' ? nextCp.distM - s.progress : (s.runner ? haversineM(s.runner, [nextCp.lat, nextCp.lng]) : nextCp.distM))) : 0;
+  const nextDist = nextCp ? Math.max(0, Math.round(s.runner ? haversineM(s.runner, [nextCp.lat, nextCp.lng]) : nextCp.distM)) : 0;
   const cpState = useMemo(() => (i: number) => (s.checkedIn.has(i) ? 'done' : i === s.nextCp ? 'next' : ''), [s.checkedIn, s.nextCp]);
-  const pace = mode === 'DEMO' ? fmtPace(372) : s.progress > 50 ? fmtPace(s.elapsedSec / (s.progress / 1000)) : "--'--\"";
+  const pace = s.progress > 50 ? fmtPace(s.elapsedSec / (s.progress / 1000)) : "--'--\"";
 
   const ask = async () => {
     if (!question.trim() || !s.runner) return;
@@ -67,9 +62,9 @@ export default function RunPage() {
         <div><b>{pace}</b><span>페이스</span></div>
       </div>
       <div className="map-wrap">
-        <RunMap route={course.polyline} done={s.done} checkpoints={cps} cpState={cpState} runner={s.runner ?? course.polyline[0]} pois={s.pois} follow={mode === 'LIVE'} />
+        <RunMap route={course.polyline} done={s.done} checkpoints={cps} cpState={cpState} runner={s.runner ?? course.polyline[0]} pois={s.pois} follow />
         <div className="map-chip">
-          <span className={`live-badge ${mode === 'LIVE' ? '' : 'seed'}`}><i />{mode === 'LIVE' ? '실제 GPS' : `데모 GPS ×${speed}`}</span>
+          <span className="live-badge"><i />실제 GPS{s.gpsAccuracyM != null ? ` ±${s.gpsAccuracyM}m` : ''}</span>
           {s.nearbySource && <button type="button" style={{ all: 'unset', cursor: 'pointer' }} onClick={() => setShowRaw((v) => !v)}><LiveBadge source={s.nearbySource} ms={s.nearbyMs ?? undefined} label="TourAPI" /></button>}
         </div>
         {s.push && (
@@ -94,16 +89,15 @@ export default function RunPage() {
           <div className="cps">{cps.map((_, i) => <i key={i} className={cpState(i)} />)}</div>
           {s.status === 'idle' || s.status === 'starting' || s.status === 'error' ? (
             <div className="stack">
-              <div className="row"><div className="pills"><button type="button" className={`pill ${mode === 'DEMO' ? 'on' : ''}`} onClick={() => setMode('DEMO')}>데모 GPS 재생</button><button type="button" className={`pill ${mode === 'LIVE' ? 'on' : ''}`} onClick={() => setMode('LIVE')}>실제 GPS</button></div><div className="pills">{[1, 2, 4].map((v) => <button key={v} type="button" className={`pill ${speed === v ? 'on' : ''}`} onClick={() => setSpeed(v)}>×{v}</button>)}</div></div>
               {s.error && <div style={{ color: 'var(--red)', fontSize: 12.5 }}>{s.error}</div>}
-              <button className="btn" type="button" disabled={s.status === 'starting'} onClick={begin}>{s.status === 'starting' ? '시작하는 중…' : `${course.name} 시작`}</button>
-              <p className="note" style={{ marginTop: 0 }}>실제 GPS는 https 주소에서만 위치 권한이 나옵니다. 데모 GPS는 코스를 따라 자동 재생하며 → 다음 체크포인트 · Space 일시정지 · F 완주 · M 음성 · 1/2/4 속도.</p>
+              <button className="btn" type="button" disabled={s.status === 'starting'} onClick={begin}>{s.status === 'starting' ? 'GPS 확인 중…' : `GPS 확인 후 ${course.name} 시작`}</button>
+              <p className="note" style={{ marginTop: 0 }}>코스 출발점에서 위치 권한을 허용해 주세요. 정확도 80m 이내의 실제 GPS만 기록하며, 모든 체크포인트와 코스 거리의 80% 이상이 서버에서 확인되어야 완주됩니다.</p>
             </div>
           ) : (
             <div className="run-ctl">
               <button className={`round voice ${voice ? 'on' : ''}`} type="button" aria-pressed={voice} aria-label="음성 가이드" onClick={toggleVoice}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" /></svg></button>
               <button className="big" type="button" aria-label={s.status === 'paused' ? '재개' : '일시정지'} onClick={togglePause}>{s.status === 'paused' ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l11-7z" /></svg> : <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>}</button>
-              <button className="round stop" type="button" aria-label="러닝 종료" onClick={() => void finish()}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button>
+              <button className="round stop" type="button" aria-label="완주 확인" onClick={() => void finish()}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button>
             </div>
           )}
         </div>
@@ -111,7 +105,6 @@ export default function RunPage() {
       <AgentLog entries={s.log}>
         {running && <div className="ask-row"><input value={question} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask()} placeholder="AI 동반자에게 물어보기 — 이 근처 뭐 있어?" /><button type="button" disabled={asking} onClick={ask}>{asking ? '…' : '질문'}</button></div>}
       </AgentLog>
-      {mode === 'DEMO' && running && <div style={{ padding: '0 14px 16px', display: 'flex', gap: 6 }}><button className="btn sm light" type="button" onClick={nextCheckpoint}>다음 체크포인트 →</button><button className="btn sm light" type="button" onClick={() => void finish()}>완주로 건너뛰기</button></div>}
     </main>
   );
 }
