@@ -89,7 +89,7 @@ export default function Home() {
         <button className="btn" type="button" disabled={!best} onClick={() => best && router.push(`/run/${best.course.slug}`)}>이 코스로 러닝 시작</button>
       </div>
 
-      <div className="section-title"><h2>달리며 만나는 수성구</h2><span>관광공사 공공데이터</span></div>
+      <div className="section-title"><h2>달리며 만나는 수성구</h2><span>{nearby?.source === 'TOURAPI' ? '관광공사 공공데이터' : '저장 관광지 데이터'}</span></div>
       {attractions.length > 0 ? <div className="spot-scroller">
         {attractions.map((spot) => <article className="spot-card" key={spot.contentId ?? `${spot.title}-${spot.lat}`}>
           <div className="spot-photo">{spot.firstImage ? <img src={spot.firstImage} alt="" /> : <span aria-hidden>LOCAL<br />SPOT</span>}<em>{placeKind(spot.contentTypeId)}</em></div>
