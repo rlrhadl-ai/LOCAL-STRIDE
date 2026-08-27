@@ -21,28 +21,30 @@ export interface FinishSummary {
   profile: { totalKm: number; courses: number; medals: number };
 }
 
-function validate(mode: 'DEMO' | 'LIVE', distanceM: number, durationSec: number, trackLen: number): string | null {
-  if (distanceM < 200) return '거리 200m 미만';
+function validate(mode: 'DEMO' | 'LIVE', courseDistanceM: number, distanceM: number, durationSec: number, trackLen: number, allCheckedIn: boolean): string | null {
+  if (mode !== 'LIVE') return '데모 러닝은 완주 인증 및 보상 대상이 아닙니다';
+  const requiredDistanceM = Math.max(200, Math.round(courseDistanceM * 0.8));
+  if (distanceM < requiredDistanceM) return `GPS 확인 거리 ${(distanceM / 1000).toFixed(2)}km — 최소 ${(requiredDistanceM / 1000).toFixed(2)}km가 필요합니다`;
+  if (!allCheckedIn) return '모든 체크포인트를 GPS로 통과해야 완주할 수 있습니다';
+  if (trackLen < Math.max(10, Math.ceil(courseDistanceM / 500))) return 'GPS 궤적이 부족합니다 — 위치 권한과 GPS 수신 상태를 확인해 주세요';
   const pace = durationSec / (distanceM / 1000);
-  if (mode === 'LIVE') {
-    if (pace < 150) return `페이스 ${fmtPace(pace)} — 사람이 낼 수 없는 속도`;
-    if (pace > 1500) return '페이스 25분/km 초과 — 걷기/정지로 판정';
-    if (trackLen < 10) return 'GPS 궤적 부족';
-  }
+  if (pace < 150) return `페이스 ${fmtPace(pace)} — 사람이 낼 수 없는 속도`;
+  if (pace > 1500) return '페이스 25분/km 초과 — 러닝 기록으로 인증할 수 없습니다';
   return null;
 }
 
-export async function finishRun(runId: string, userId: string, body: { durationSec: number; distanceM?: number }): Promise<FinishSummary> {
+export async function finishRun(runId: string, userId: string): Promise<FinishSummary> {
   const run = await prisma.run.findFirst({ where: { id: runId, userId }, include: { course: { include: { checkpoints: true } }, checkins: true } });
   if (!run) throw new Error('러닝을 찾을 수 없습니다');
   if (run.status === 'FINISHED') throw new Error('이미 완주 처리된 러닝입니다');
-  const distanceM = run.mode === 'DEMO' ? run.course.distanceM : Math.max(run.distanceM, body.distanceM ?? 0);
-  const durationSec = Math.max(1, Math.round(body.durationSec));
-  const avgPaceSec = Math.round(durationSec / (distanceM / 1000));
+  const distanceM = run.distanceM;
+  const durationSec = Math.max(1, Math.round((Date.now() - run.startedAt.getTime()) / 1000));
   const track = Array.isArray(run.track) ? (run.track as unknown[]) : [];
-  const invalidReason = validate(run.mode, distanceM, durationSec, track.length);
   const allCheckedIn = run.checkins.length >= run.course.checkpoints.length;
-  const valid = !invalidReason;
+  const invalidReason = validate(run.mode, run.course.distanceM, distanceM, durationSec, track.length, allCheckedIn);
+  if (invalidReason) throw new Error(invalidReason);
+  const avgPaceSec = Math.round(durationSec / (distanceM / 1000));
+  const valid = true;
 
   await prisma.run.update({ where: { id: run.id }, data: { status: 'FINISHED', finishedAt: new Date(), distanceM, durationSec, avgPaceSec, valid, invalidReason } });
 
