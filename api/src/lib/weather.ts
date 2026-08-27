@@ -57,7 +57,7 @@ export async function weatherNow(lat: number, lng: number): Promise<WeatherNow> 
   if (AIR_KEY) {
     try {
       const q = new URLSearchParams({ returnType: 'json', numOfRows: '30', pageNo: '1', sidoName: '대구', ver: '1.3' });
-      const res = await fetch(`https://apis.data.go.kr/B552584/ArpltnInfoInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${encodeURIComponent(AIR_KEY)}&${q}`, { signal: AbortSignal.timeout(6000) });
+      const res = await fetch(`https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${encodeURIComponent(AIR_KEY)}&${q}`, { signal: AbortSignal.timeout(6000) });
       const json: any = await res.json();
       const items: any[] = json?.response?.body?.items ?? [];
       const st = items.find((i) => i.stationName === '수성동') ?? items.find((i) => i.pm10Value && i.pm10Value !== '-') ?? items[0];
