@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import AgentLog from '@/components/AgentLog';
 import LiveBadge from '@/components/LiveBadge';
@@ -52,7 +53,7 @@ export default function RunPage() {
     setAsking(true);
     try {
       const r = await api.post<{ answer: string; source: string; latencyMs: number; context: { source: string; pois: { title: string; dist: number }[] } }>('/ai/ask', { question, lat: s.runner[0], lng: s.runner[1], courseName: course?.name, distanceM: Math.round(s.progress) });
-      log('decide', `AI 동반자(${r.source}) ${r.latencyMs}ms · 컨텍스트 ${r.context.source} ${r.context.pois.length}곳 → "${r.answer.slice(0, 60)}${r.answer.length > 60 ? '…' : ''}"`);
+      log('decide', `관광 동반자(${r.source}) ${r.latencyMs}ms · 컨텍스트 ${r.context.source} ${r.context.pois.length}곳 → "${r.answer.slice(0, 60)}${r.answer.length > 60 ? '…' : ''}"`);
       speak(r.answer, true); setQ('');
     } catch (e: any) { log('sense', `AI 응답 실패: ${e.message}`); }
     finally { setAsking(false); }
@@ -62,6 +63,7 @@ export default function RunPage() {
   const running = s.status === 'running' || s.status === 'paused';
   return (
     <main className="run-shell">
+      <div className="run-topbar"><Link href={`/courses/${course.slug}`}>← 코스로 돌아가기</Link><span>실제 GPS 러닝</span></div>
       <div className="stats">
         <div><b>{fmtKm(s.progress)}</b><span>km</span></div>
         <div><b>{fmtTime(s.elapsedSec)}</b><span>시간</span></div>
@@ -84,7 +86,7 @@ export default function RunPage() {
               <h4>{s.push.title}</h4>
               <div className="status">{s.push.status}</div>
               <p>{s.push.desc}</p>
-              <div className="acts"><button className="main" type="button" onClick={() => speak(s.push!.voice, true)}>음성 가이드 듣기</button><button type="button" onClick={() => { log('learn', `관심 장소 저장 → '${s.push!.type}' 가중치 +1`); closePush(); }}>관심 장소 저장</button></div>
+              <div className="acts"><button className="main" type="button" onClick={() => speak(s.push!.voice, true)}>음성 가이드 듣기</button><button type="button" onClick={() => { log('learn', `관심 장소 '${s.push!.type}' 선호 기록에 추가`); closePush(); }}>관심 장소 저장</button></div>
             </div>
             <button className="x" type="button" aria-label="닫기" onClick={closePush}>×</button>
           </div>
@@ -100,7 +102,7 @@ export default function RunPage() {
             <div className="stack">
               {s.error && <div style={{ color: 'var(--red)', fontSize: 12.5 }}>{s.error}</div>}
               <button className="btn" type="button" disabled={s.status === 'recovering' || s.status === 'starting'} onClick={begin}>{s.status === 'recovering' ? '진행 중 러닝 확인 중…' : s.status === 'starting' ? 'GPS 확인 중…' : `GPS 확인 후 ${course.name} 시작`}</button>
-              <p className="note" style={{ marginTop: 0 }}>코스 출발점에서 위치 권한을 허용해 주세요. 정확도 80m 이내의 실제 GPS만 기록하며, 모든 체크포인트와 코스 거리의 80% 이상이 서버에서 확인되어야 완주됩니다.</p>
+              <p className="note" style={{ marginTop: 0 }}>코스 출발점에서 위치 권한을 허용해 주세요. 정확도 80m 이내의 실제 GPS만 기록하며, 모든 체크포인트와 코스 거리의 80% 이상이 서버에서 확인되어야 완주됩니다. <Link href="/privacy">위치정보 이용 안내</Link></p>
             </div>
           ) : (
             <div className="run-ctl">
@@ -112,7 +114,7 @@ export default function RunPage() {
         </div>
       </div>
       <AgentLog entries={s.log}>
-        {running && <div className="ask-row"><input value={question} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask()} placeholder="AI 동반자에게 물어보기 — 이 근처 뭐 있어?" /><button type="button" disabled={asking} onClick={ask}>{asking ? '…' : '질문'}</button></div>}
+        {running && <div className="ask-row"><input value={question} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask()} placeholder="관광 가이드에게 물어보기 — 이 근처 뭐 있어?" /><button type="button" disabled={asking} onClick={ask}>{asking ? '…' : '질문'}</button></div>}
       </AgentLog>
     </main>
   );

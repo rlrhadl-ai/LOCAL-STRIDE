@@ -32,7 +32,7 @@ docs/  아키텍처 · 데이터 모델 · API · 공공데이터 · 로드맵 �
 
 ## 빠른 시작 (로컬)
 
-요구: Node 20+, Docker(또는 PostgreSQL 16), 공공데이터포털 계정(선택 — 없어도 SEED 데이터로 전부 동작)
+요구: Node 20+, Docker(또는 PostgreSQL 16), 공공데이터포털 계정. 로컬 UI 확인은 SEED 데이터로 가능하지만 공모전 심사·운영 환경에서는 한국관광공사 TourAPI 키가 필수다.
 
 ```bash
 # 1) DB

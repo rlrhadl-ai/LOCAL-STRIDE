@@ -38,11 +38,11 @@ export default function CoursesPage() {
     </section>
 
     {best && bestCourse && <Link href={`/courses/${bestCourse.slug}`} className={`course-pick ${loading ? 'loading' : ''}`}>
-      <div className="course-pick-visual">{bestCourse.thumbnailUrl && <img src={mediaUrl(bestCourse.thumbnailUrl)} alt=""/>}<span>AI PICK</span><b>{(bestCourse.distanceM / 1000).toFixed(1)}K</b></div>
+      <div className="course-pick-visual">{bestCourse.thumbnailUrl && <img src={mediaUrl(bestCourse.thumbnailUrl)} alt=""/>}<span>조건 맞춤 PICK</span><b>{(bestCourse.distanceM / 1000).toFixed(1)}K</b></div>
       <div className="course-pick-copy"><small>오늘의 추천 · 점수 {best.score}</small><h2>{bestCourse.name}</h2><p>{best.reasons[0] || `${km}km와 ${theme} 분위기에 가장 잘 맞는 코스예요.`}</p><div><span>{bestCourse.difficulty}</span>{bestCourse.themes.slice(0, 2).map((item) => <span key={item}>{item}</span>)}</div><strong>코스 자세히 보기 →</strong></div>
     </Link>}
 
-    <div className="course-catalog-head"><div><span>DAEGU ROUTE</span><h2>{theme} 코스</h2></div><small>{items.length}개</small></div>
+    <div className="course-catalog-head"><div><span>DAEGU ROUTE</span><h2>{theme} 코스</h2></div><small>{loading ? '불러오는 중' : `${items.length}개`}</small></div>
     <div className="course-catalog">{items.map((course, index) => <Link className="catalog-course" href={`/courses/${course.slug}`} key={course.id}>
       <div className={`catalog-thumb tone-${(index % 4) + 1}`}>{course.thumbnailUrl && <img src={mediaUrl(course.thumbnailUrl)} alt=""/>}<span>{(course.distanceM / 1000).toFixed(1)}K</span></div>
       <div><small>{course.areaName || '대구광역시'} · {course.difficulty}</small><h3>{course.name}</h3><p>{course.description || '대구의 풍경과 이야기를 가까이에서 만나는 러닝 코스'}</p><div>{course.themes.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div></div><b aria-hidden>→</b>

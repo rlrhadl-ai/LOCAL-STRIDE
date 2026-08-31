@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LOCAL STRIDE">
+  <rect width="512" height="512" rx="112" fill="#0B1F55"/>
+  <path d="M76 334c76-12 93-116 174-116 76 0 85 92 184 62" fill="none" stroke="#2A72F5" stroke-width="42" stroke-linecap="round"/>
+  <path d="M78 334c76-12 93-116 174-116 76 0 85 92 184 62" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="18 25"/>
+  <circle cx="78" cy="334" r="31" fill="#FFD166" stroke="#fff" stroke-width="10"/>
+  <circle cx="434" cy="280" r="25" fill="#fff" stroke="#FFD166" stroke-width="10"/>
+  <text x="256" y="154" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="77" font-weight="900" letter-spacing="-5">STRIDE</text>
+  <text x="256" y="196" text-anchor="middle" fill="#FFD166" font-family="Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="5">LOCAL · DAEGU</text>
+</svg>

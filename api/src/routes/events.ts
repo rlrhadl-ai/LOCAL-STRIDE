@@ -6,6 +6,7 @@ import { requireUser } from '../middleware/auth';
 import { broadcastRanking, rankingFor } from '../live/ranking';
 
 export const events = Router();
+const isPreview = (event: { title: string; description: string }) => event.title.includes('PREVIEW') || event.description.includes('시범') || event.description.includes('확정 후');
 
 // GET /api/events
 events.get('/events', wrap(async (req, res) => {
@@ -28,6 +29,7 @@ events.post('/events/:id/register', requireUser, wrap(async (req, res) => {
   const body = z.object({ tshirtSize: z.enum(['S', 'M', 'L', 'XL', '2XL']).optional() }).parse(req.body ?? {});
   const ev = await prisma.event.findUnique({ where: { id: String(req.params.id) }, include: { _count: { select: { registrations: { where: { status: { in: ['REGISTERED', 'ATTENDED'] } } } } } } });
   if (!ev || ev.status !== 'OPEN') throw new HttpError(409, '접수 중인 대회가 아닙니다');
+  if (isPreview(ev)) throw new HttpError(409, '현재 대회는 MVP 시범 콘텐츠로 실제 접수를 받지 않습니다');
   if (ev._count.registrations >= ev.capacity) throw new HttpError(409, '정원이 마감되었습니다');
   const reg = await prisma.eventRegistration.upsert({ where: { eventId_userId: { eventId: ev.id, userId: req.user!.id } }, create: { eventId: ev.id, userId: req.user!.id, tshirtSize: body.tshirtSize, bib: ev._count.registrations + 1, paid: ev.feeKrw === 0, status: 'REGISTERED' }, update: { tshirtSize: body.tshirtSize, status: 'REGISTERED' } });
   res.status(201).json(reg);
@@ -38,6 +40,8 @@ events.post('/events/:id/results', requireUser, wrap(async (req, res) => {
   const body = z.object({ timeSec: z.number().min(1), distanceM: z.number().min(0) }).parse(req.body);
   const reg = await prisma.eventRegistration.findUnique({ where: { eventId_userId: { eventId: String(req.params.id), userId: req.user!.id } } });
   if (!reg) throw new HttpError(403, '참가 등록이 필요합니다');
+  const event = await prisma.event.findUnique({ where: { id: reg.eventId }, select: { title: true, description: true } });
+  if (event && isPreview(event)) throw new HttpError(409, '시범 대회에는 실제 기록을 등록할 수 없습니다');
   const r = await prisma.eventResult.upsert({ where: { eventId_userId: { eventId: reg.eventId, userId: req.user!.id } }, create: { eventId: reg.eventId, userId: req.user!.id, timeSec: body.timeSec, distanceM: body.distanceM }, update: { timeSec: body.timeSec, distanceM: body.distanceM } });
   await broadcastRanking(reg.eventId);
   res.json(r);

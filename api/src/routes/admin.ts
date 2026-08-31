@@ -9,7 +9,7 @@ import { requireAdmin } from '../middleware/adminAuth';
 import { HttpError, wrap } from '../middleware/error';
 
 export const admin = Router();
-const allowedEmails = new Set((process.env.ADMIN_EMAILS || 'toy146@naver.com').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
+const allowedEmails = new Set((process.env.ADMIN_EMAILS || '').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
 const adminSetupCode = String(process.env.ADMIN_SETUP_CODE || '');
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const imageUrl = z.string().max(1000).refine((value) => value.startsWith('/') || /^https?:\/\//i.test(value), '이미지 URL 형식이 올바르지 않습니다');

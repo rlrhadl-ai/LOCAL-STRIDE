@@ -24,7 +24,6 @@ export interface EngineState {
   runId: string | null; progress: number; elapsedSec: number; runner: LatLng | null; done: LatLng[]; nextCp: number; checkedIn: Set<number>;
   push: PushItem | null; pois: Poi[]; log: LogEntry[]; nearbySource: NearbyResult['source'] | null; nearbyMs: number | null; lastRaw: unknown; gpsNote: string | null; gpsAccuracyM: number | null; gpsInterrupted: boolean; offline: boolean; pendingPoints: number; pendingCheckins: number; wakeLockActive: boolean; recovered: boolean; error: string | null;
 }
-
 export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
   const [s, setS] = useState<EngineState>({ status: 'idle', runId: null, progress: 0, elapsedSec: 0, runner: null, done: [], nextCp: 1, checkedIn: new Set([0]), push: null, pois: [], log: [], nearbySource: null, nearbyMs: null, lastRaw: null, gpsNote: null, gpsAccuracyM: null, gpsInterrupted: false, offline: typeof navigator !== 'undefined' ? !navigator.onLine : false, pendingPoints: 0, pendingCheckins: 0, wakeLockActive: false, recovered: false, error: null });
   const r = useRef({ progress: 0, nextCp: 1, seen: new Set<string>(), raf: 0, lastTs: 0, paused: false, runId: '' as string, cps: [] as Course['checkpoints'], pois: [] as CoursePoi[], route: [] as LatLng[], cum: [] as number[], total: 0, lastQueryAt: -1e9, trackBuf: [] as RunTrackPoint[], pendingCheckins: [] as PendingCheckin[], lastTrackSent: 0, flushPromise: null as Promise<void> | null, syncPromise: null as Promise<void> | null, watch: null as number | null, lastFix: null as LatLng | null, lastFixAt: 0, elapsed: 0, startedAt: 0, pushTimer: 0, monitorTimer: 0, reconnectTimer: 0, wakeLock: null as WakeLockLike | null, speed, mode, finishing: false, checkinPending: false, log: [] as LogEntry[] });
@@ -238,7 +237,7 @@ export function useRunEngine(course: Course | null, mode: Mode, speed: number) {
       const summary = await api.post<FinishSummary>(`/runs/${r.current.runId}/finish`, { durationSec, distanceM: Math.round(r.current.progress) });
       log('decide', `완주 조건 ${summary.valid ? '충족' : '미충족'} — 체크인 ${summary.checkins}/${summary.checkpoints} · ${(summary.distanceM / 1000).toFixed(2)}km · ${summary.pace}`);
       if (summary.valid) log('act', `${summary.medal ? summary.medal.name + ' 메달 발급 · ' : ''}${summary.coupon ? summary.coupon.title + ' 쿠폰 발행 · ' : ''}${summary.challenge ? `${summary.challenge.name} ${summary.challenge.after}/${summary.challenge.target}` : ''}`);
-      log('learn', `선호 테마 '${course?.themes.join('·')}' 가중치 갱신 → 다음 추천에 반영`);
+      log('learn', `러닝 결과와 코스 테마 '${course?.themes.join('·')}' 선호 기록 저장`);
       sessionStorage.setItem(`ls_finish_${r.current.runId}`, JSON.stringify({ summary, log: r.current.log, courseName: course?.name }));
       speak(summary.valid ? '완주를 축하합니다. 메달과 쿠폰이 지급되었습니다.' : '러닝을 마쳤습니다.');
       cancelAnimationFrame(r.current.raf);

@@ -8,6 +8,7 @@ import { HttpError, wrap } from '../middleware/error';
 export const programs = Router();
 const activeRegistration: RegistrationStatus[] = ['REGISTERED', 'ATTENDED'];
 const publicKinds = ['MORNING', 'AFTER_WORK', 'INDEPENDENT', 'THEME', 'POPUP'] as const;
+const registrationEnabled = process.env.ALLOW_PROGRAM_REGISTRATION === 'true';
 
 const hostSelect = {
   id: true, nickname: true, avatarColor: true, avatarUrl: true, bio: true,
@@ -23,7 +24,7 @@ function present(row: any, userId?: string) {
     place: row.place, paceSec: row.paceSec, imageUrl: row.imageUrl, startsAt: row.startsAt,
     capacity: row.capacity, remaining: Math.max(0, row.capacity - active.length), feeKrw: row.feeKrw,
     status: row.status, registered: Boolean(mine && activeRegistration.includes(mine.status)),
-    registrationStatus: mine?.status ?? null,
+    registrationStatus: mine?.status ?? null, registrationEnabled,
     host: row.host ? { ...row.host, runCount: row.host._count.runs, _count: undefined } : null,
     course: row.course,
   };
@@ -42,7 +43,6 @@ programs.get('/programs', wrap(async (req, res) => {
   });
   res.json({ items: rows.map((row) => present(row, req.user?.isAuthenticated ? req.user.id : undefined)) });
 }));
-
 programs.get('/programs/:id', wrap(async (req, res) => {
   const id = String(req.params.id);
   const row = await prisma.event.findFirst({
@@ -54,6 +54,7 @@ programs.get('/programs/:id', wrap(async (req, res) => {
 }));
 
 programs.post('/programs/:id/join', requireAccount, wrap(async (req, res) => {
+  if (!registrationEnabled) throw new HttpError(409, '현재 일정은 MVP 시범 콘텐츠로 실제 참가 신청을 받지 않습니다');
   const id = String(req.params.id);
   const registration = await prisma.$transaction(async (tx) => {
     const program = await tx.event.findFirst({ where: { OR: [{ id }, { slug: id }], kind: { in: [...publicKinds] } } });
@@ -72,6 +73,7 @@ programs.post('/programs/:id/join', requireAccount, wrap(async (req, res) => {
 }));
 
 programs.post('/programs/:id/cancel', requireAccount, wrap(async (req, res) => {
+  if (!registrationEnabled) throw new HttpError(409, '현재 일정은 MVP 시범 콘텐츠입니다');
   const id = String(req.params.id);
   const program = await prisma.event.findFirst({ where: { OR: [{ id }, { slug: id }], kind: { in: [...publicKinds] } }, select: { id: true, startsAt: true } });
   if (!program) throw new HttpError(404, '러닝 프로그램을 찾을 수 없습니다');

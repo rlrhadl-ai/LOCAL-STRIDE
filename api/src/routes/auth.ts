@@ -8,7 +8,7 @@ import { HttpError, wrap } from '../middleware/error';
 
 export const auth = Router();
 const attempts = new Map<string, { count: number; resetAt: number }>();
-const reservedAdminEmails = new Set((process.env.ADMIN_EMAILS || 'toy146@naver.com').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
+const reservedAdminEmails = new Set((process.env.ADMIN_EMAILS || '').split(',').map((email) => email.trim().toLowerCase()).filter(Boolean));
 const password = z.string().min(8, '비밀번호는 8자 이상이어야 합니다').max(100)
   .regex(/[A-Za-z]/, '비밀번호에 영문자를 포함해 주세요')
   .regex(/[0-9]/, '비밀번호에 숫자를 포함해 주세요');
@@ -33,7 +33,6 @@ auth.post('/auth/signup', wrap(async (req, res) => {
   await startUserSession(req, res, user.id);
   res.status(201).json({ user });
 }));
-
 auth.post('/auth/login', wrap(async (req, res) => {
   const key = `${req.ip}:${String(req.body?.email || '').toLowerCase()}`;
   if (!loginAllowed(key)) throw new HttpError(429, '로그인 시도가 많습니다. 15분 후 다시 시도해 주세요');

@@ -5,22 +5,24 @@ import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://localstride.kr'),
-  title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
-  description: '대구 러너가 고른 코스, 로컬 러닝 메이트, 아침런과 퇴근런을 한곳에서 만나는 대구 러닝 커뮤니티',
+  title: 'LOCAL STRIDE · GPS로 발견하는 대구 러닝 관광',
+  description: 'GPS 러닝과 한국관광공사 TourAPI로 대구 관광지와 로컬 장소를 발견하는 수성구 기반 러닝 관광 플랫폼',
+  alternates: { canonical: '/' },
+  icons: { icon: '/icon.svg', apple: '/icon.svg' },
   manifest: '/manifest.json',
   openGraph: {
-    title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
-    description: '대구의 길과 사람을 연결하는 아침런·퇴근런·주제형 로컬 러닝 커뮤니티',
+    title: 'LOCAL STRIDE · GPS로 발견하는 대구 러닝 관광',
+    description: '달리는 동안 한국관광공사 TourAPI 기반 관광지와 로컬 장소를 자동으로 발견하세요.',
     url: 'https://localstride.kr',
     siteName: 'LOCAL STRIDE',
     locale: 'ko_KR',
     type: 'website',
-    images: [{ url: '/social/localstride-share.jpg', width: 1200, height: 630, alt: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱' }],
+    images: [{ url: '/social/localstride-share.jpg', width: 1200, height: 630, alt: 'LOCAL STRIDE · GPS로 발견하는 대구 러닝 관광' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LOCAL STRIDE · 대구 토박이가 만든 대구 러닝 앱',
-    description: '대구의 길과 사람을 연결하는 아침런·퇴근런·주제형 로컬 러닝 커뮤니티',
+    title: 'LOCAL STRIDE · GPS로 발견하는 대구 러닝 관광',
+    description: '달리는 동안 한국관광공사 TourAPI 기반 관광지와 로컬 장소를 자동으로 발견하세요.',
     images: ['/social/localstride-share.jpg'],
   },
 };

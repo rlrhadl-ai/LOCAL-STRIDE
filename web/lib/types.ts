@@ -5,7 +5,7 @@ export interface CoursePoi { courseId: string; poiId: string; distFromStartM: nu
 export interface Course { id: string; slug: string; name: string; description: string; thumbnailUrl?: string | null; distanceM: number; difficulty: string; themes: string[]; areaName: string; startLat: number; startLng: number; polyline: LatLng[]; elevationGainM: number; estMinutes: number; source: 'OFFICIAL' | 'USER'; isPublic: boolean; checkpoints?: Checkpoint[]; pois?: CoursePoi[]; _count?: { checkpoints: number; runs: number } }
 export interface Weather { source: string; airSource: string; temp: number; humidity: number; windMs: number; rainType: string; sky: string; pm10: number | null; pm10Grade: string; sunset: string; error?: string }
 export interface Recommendation { weather: Weather; input: { km: number; themes: string[]; hourKst: number }; best: { course: Pick<Course, 'id' | 'slug' | 'name' | 'distanceM' | 'difficulty' | 'themes' | 'estMinutes' | 'source'>; score: number; reasons: string[] } | null; candidates: { course: any; score: number; reasons: string[] }[] }
-export interface NearbyResult { source: 'TOURAPI' | 'SEED'; fetchedMs: number; endpoint: string; items: Poi[]; raw?: unknown; error?: string }
+export interface NearbyResult { source: 'TOURAPI' | 'SEED'; fetchedMs: number; endpoint: string; items: Poi[]; raw?: unknown; error?: string; cached?: boolean }
 export interface PartnerOffer { id: string; name: string; category: string; addr: string | null; offerTitle: string; discountKrw: number | null; validUntil: string | null; status: 'COMING_SOON' | 'ACTIVE' | 'DEMO' | 'HIDDEN'; source?: 'CURATED' | 'SEED'; imageUrl?: string | null; sortOrder?: number }
 export interface PartnerResult { items: PartnerOffer[] }
 export interface HomeBanner { id: string; title: string; subtitle: string | null; imageUrl: string; linkUrl: string | null; sortOrder: number }
@@ -13,7 +13,7 @@ export interface RunProgram {
   id: string; slug: string; title: string; description: string;
   kind: 'MORNING' | 'AFTER_WORK' | 'INDEPENDENT' | 'THEME' | 'POPUP';
   place: string | null; paceSec: number | null; imageUrl: string | null; startsAt: string;
-  capacity: number; remaining: number; feeKrw: number; status: string; registered: boolean; registrationStatus: string | null;
+  capacity: number; remaining: number; feeKrw: number; status: string; registered: boolean; registrationStatus: string | null; registrationEnabled: boolean;
   host: { id: string; nickname: string; avatarColor: string; avatarUrl: string | null; bio: string | null; homeArea: string; preferredPaceSec: number | null; phoneVerified: boolean; runCount: number } | null;
   course: { id: string; slug: string; name: string; distanceM: number; difficulty: string; thumbnailUrl: string | null } | null;
 }

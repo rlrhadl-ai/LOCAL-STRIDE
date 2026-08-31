@@ -13,12 +13,14 @@ export default function AccountAuthForm({ mode, nextPath = '/me', defaultEmail =
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setError('');
     if (signup && password !== confirm) return setError('비밀번호가 서로 일치하지 않습니다');
+    if (signup && !accepted) return setError('이용약관과 개인정보·위치정보 안내에 동의해 주세요');
     setLoading(true);
     try {
       await api.post(`/auth/${mode}`, { email, password, ...(signup ? { nickname } : {}) });
@@ -41,6 +43,7 @@ export default function AccountAuthForm({ mode, nextPath = '/me', defaultEmail =
         <label className="field">이메일<input className="input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" autoComplete="email" required /></label>
         <label className="field">비밀번호<input className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={100} placeholder="영문과 숫자를 포함해 8자 이상" autoComplete={signup ? 'new-password' : 'current-password'} required /></label>
         {signup && <label className="field">비밀번호 확인<input className="input" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} minLength={8} maxLength={100} autoComplete="new-password" required /></label>}
+        {signup && <label className="account-consent"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required/><span><Link href="/terms" target="_blank">이용약관</Link>과 <Link href="/privacy" target="_blank">개인정보·위치정보 안내</Link>를 확인했으며 이에 동의합니다.</span></label>}
         {error && <p className="account-auth-error" role="alert">{error}</p>}
         <button className="btn account-auth-submit" disabled={loading}>{loading ? '처리 중…' : signup ? '회원가입' : '로그인'}</button>
       </form>

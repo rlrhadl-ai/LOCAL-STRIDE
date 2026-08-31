@@ -8,6 +8,9 @@ import { fmtTime } from '@/lib/types';
 
 interface Rank { rank: number; nickname: string; avatarColor: string; timeSec: number; distanceM: number }
 interface Ev { id: string; title: string; description: string; startsAt: string; capacity: number; feeKrw: number; tshirt: boolean; status: string; course: { slug: string; name: string; distanceM: number } | null; registration: { bib: number | null; tshirtSize: string | null; paid: boolean } | null; ranking: Rank[]; _count: { registrations: number } }
+const isPreview = (event: Ev) => event.title.includes('PREVIEW') || event.description.includes('시범') || event.description.includes('확정 후');
+const cleanTitle = (value: string) => value.replace(/\s*·\s*PREVIEW$/, '');
+const cleanDescription = (value: string) => value.replace(/^\[MVP 시범 대회\]\s*/, '');
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +39,7 @@ export default function EventDetail() {
   const submitResult = async () => { const t = prompt('기록 (분:초)', '18:30'); if (!t) return; const [m, s] = t.split(':').map(Number); try { await api.post(`/events/${ev!.id}/results`, { timeSec: m * 60 + (s || 0), distanceM: ev!.course?.distanceM ?? 3000 }); setMsg('기록이 라이브 랭킹에 반영되었어요'); } catch (e: any) { setMsg(e.message); } };
 
   if (!ev) return <main className="page"><AppHeader back title="대회" /><div className="empty">{msg || '불러오는 중…'}</div></main>;
+  const preview = isPreview(ev);
   if (board) return (
     <main style={{ position: 'fixed', inset: 0, background: '#061A40', color: '#fff', padding: 24, overflow: 'auto', zIndex: 1000 }}>
       <div className="row"><div><div style={{ fontSize: 12, letterSpacing: '.2em', color: 'var(--gold)' }}>LIVE RANKING · {live === 'socket' ? 'SOCKET' : 'POLLING'}</div><h1 style={{ margin: '4px 0 0', fontSize: 'clamp(24px, 4vw, 48px)' }}>{ev.title}</h1></div><button className="btn sm light" type="button" onClick={() => setBoard(false)}>닫기</button></div>
@@ -45,9 +49,10 @@ export default function EventDetail() {
   return (
     <main className="page">
       <AppHeader back title="대회" />
-      <div className="finish-hero"><div className="eyebrow">{ev.status === 'OPEN' ? 'OPEN' : ev.status} · {new Date(ev.startsAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric' })}</div><h2 style={{ fontSize: 24 }}>{ev.title}</h2><div className="sub">{ev.course ? `${ev.course.name} · ${(ev.course.distanceM / 1000).toFixed(1)}km` : ''} · {ev._count.registrations}/{ev.capacity}명 · {ev.feeKrw ? `${ev.feeKrw.toLocaleString()}원` : '무료'}</div><p style={{ fontSize: 13, color: '#C9D6F5', margin: '10px 0 0', lineHeight: 1.5 }}>{ev.description}</p></div>
+      <div className="finish-hero"><div className="eyebrow">{preview ? 'MVP PREVIEW' : ev.status === 'OPEN' ? 'OPEN' : ev.status} · {new Date(ev.startsAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric' })}</div><h2 style={{ fontSize: 24 }}>{cleanTitle(ev.title)}</h2><div className="sub">{ev.course ? `${ev.course.name} · ${(ev.course.distanceM / 1000).toFixed(1)}km` : ''} · {preview ? '정식 일정·참가비 확정 전' : `${ev._count.registrations}/${ev.capacity}명 · ${ev.feeKrw ? `${ev.feeKrw.toLocaleString()}원` : '무료'}`}</div><p style={{ fontSize: 13, color: '#C9D6F5', margin: '10px 0 0', lineHeight: 1.5 }}>{cleanDescription(ev.description)}</p></div>
       <div className="card" style={{ marginTop: 12 }}>
-        {ev.registration ? <div className="row"><div><span className="tag green">참가 등록 완료</span><h4 style={{ margin: '6px 0 0' }}>배번 {ev.registration.bib ?? '-'} · 티셔츠 {ev.registration.tshirtSize ?? '-'}</h4></div><button className="btn sm" type="button" onClick={submitResult}>기록 입력</button></div>
+        {preview ? <div className="preview-action"><span className="tag gold">시범 화면</span><h4>정식 운영 전에는 신청·결제가 발생하지 않습니다.</h4><p>행사 신고, 안전 인력, 일정과 참가비가 확정되면 접수를 시작합니다.</p><button className="btn" type="button" disabled>접수 준비 중</button></div>
+          : ev.registration ? <div className="row"><div><span className="tag green">참가 등록 완료</span><h4 style={{ margin: '6px 0 0' }}>배번 {ev.registration.bib ?? '-'} · 티셔츠 {ev.registration.tshirtSize ?? '-'}</h4></div><button className="btn sm" type="button" onClick={submitResult}>기록 입력</button></div>
           : <div className="stack">{ev.tshirt && <div className="field"><span>티셔츠 사이즈</span><div className="pills">{['S', 'M', 'L', 'XL', '2XL'].map((s) => <button key={s} type="button" className={`pill ${size === s ? 'on' : ''}`} onClick={() => setSize(s)}>{s}</button>)}</div></div>}<button className="btn" type="button" disabled={ev.status !== 'OPEN'} onClick={register}>참가 등록{ev.feeKrw ? ' (결제는 2단계)' : ''}</button></div>}
         {msg && <div className="note">{msg}</div>}
       </div>

@@ -1,1 +1,12 @@
-{ "name": "LOCAL STRIDE", "short_name": "LocalStride", "start_url": "/", "display": "standalone", "background_color": "#0B1F55", "theme_color": "#1B5BDF", "icons": [{ "src": "/logo-blue.png", "sizes": "560x213", "type": "image/png" }] }
+{
+  "name": "LOCAL STRIDE · 대구 러닝 관광",
+  "short_name": "LocalStride",
+  "description": "GPS와 TourAPI로 대구 관광지를 발견하는 러닝 관광 플랫폼",
+  "lang": "ko-KR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1F55",
+  "theme_color": "#1B5BDF",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

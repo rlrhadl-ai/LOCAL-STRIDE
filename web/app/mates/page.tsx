@@ -15,7 +15,15 @@ export default function MatesPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ type: 'MATE' as 'MATE' | 'PACEMAKER', pace: 6.5, meetAt: '', place: '수성못 수변 데크', slots: 4, body: '' });
   const [message, setMessage] = useState('');
-  const load = () => { setLoading(true); return api.get<{ items: Post[] }>(`/mates${type ? `?type=${type}` : ''}`).then((result) => setItems(result.items)).catch(() => setItems([])).finally(() => setLoading(false)); };
+  const load = () => { setLoading(true); return api.get<{ items: Post[] }>(`/mates${type ? `?type=${type}` : ''}`).then((result) => {
+    const seen = new Set<string>();
+    setItems(result.items.filter((post) => {
+      if (new Date(post.meetAt).getTime() <= Date.now()) return false;
+      const key = `${post.author.nickname}|${post.type}|${post.meetAt}|${post.place}`;
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }));
+  }).catch(() => setItems([])).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
   const apply = async (post: Post) => { try { await api.post(`/mates/${post.id}/apply`); setMessage('신청 완료 — 닉네임으로만 공개됩니다.'); await load(); } catch (error: any) { setMessage(error.message); } };
   const create = async () => { try { await api.post('/mates', { type: form.type, paceSec: Math.round(form.pace * 60), meetAt: new Date(form.meetAt).toISOString(), place: form.place, slots: form.slots, body: form.body }); setOpen(false); await load(); } catch (error: any) { setMessage(error.message); } };
@@ -46,7 +54,7 @@ export default function MatesPage() {
             <div className="mate-tags"><span className={`tag ${post.type === 'PACEMAKER' ? 'gold' : ''}`}>{post.type === 'PACEMAKER' ? '페이스메이커' : '러닝 메이트'}</span>{isPreview(post) && <span className="tag">시범 모집</span>}</div>
             <h3>{cleanBody(post.body) || `${post.place}에서 같이 달려요.`}</h3>
             <div className="mate-route"><span><small>집결</small><b>{post.place}</b></span><span><small>페이스</small><b>{fmtPace(post.paceSec)}/km</b></span></div>
-            <div className="mate-footer"><span><b>{post._count.applications}/{post.slots}명</b> · {remaining}자리 남음</span><button className={`go ${post.applied ? 'on' : ''}`} type="button" disabled={post.applied || post.isMine || remaining === 0} onClick={() => apply(post)}>{post.isMine ? '내 글' : post.applied ? '신청됨' : remaining === 0 ? '마감' : '신청'}</button></div>
+            <div className="mate-footer"><span><b>{post._count.applications}/{post.slots}명</b> · {isPreview(post) ? 'MVP 예시' : `${remaining}자리 남음`}</span><button className={`go ${post.applied ? 'on' : ''}`} type="button" disabled={isPreview(post) || post.applied || post.isMine || remaining === 0} onClick={() => apply(post)}>{isPreview(post) ? '시범' : post.isMine ? '내 글' : post.applied ? '신청됨' : remaining === 0 ? '마감' : '신청'}</button></div>
           </article>
         );
       })}{!loading && items.length === 0 && <div className="empty">지금 모집 중인 러너가 없어요.</div>}{loading && <div className="empty">러너 모집을 불러오는 중이에요.</div>}</div>

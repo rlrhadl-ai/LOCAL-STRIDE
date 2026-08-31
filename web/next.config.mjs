@@ -7,6 +7,17 @@ const apiOrigin = (process.env.API_ORIGIN || '').replace(/\/$/, '');
 const nextConfig = {
   reactStrictMode: true,
   images: { remotePatterns: [{ protocol: 'http', hostname: 'tong.visitkorea.or.kr' }, { protocol: 'https', hostname: 'tong.visitkorea.or.kr' }] },
+  async headers() {
+    return [{
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+      ],
+    }];
+  },
   async rewrites() {
     if (!apiOrigin) return [];
     return [

@@ -46,7 +46,7 @@ export default function ProgramsPage() {
             <span>{KIND[program.kind]}</span><b>{program.course ? `${(program.course.distanceM / 1000).toFixed(1)}K` : 'LOCAL'}</b>
           </div>
           <div className="program-content">
-            <div className="program-date"><time dateTime={program.startsAt}>{date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })} · {date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time><em>{program.remaining > 0 ? `남은 자리 ${program.remaining}` : '모집 마감'}</em></div>
+            <div className="program-date"><time dateTime={program.startsAt}>{date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })} · {date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time><em>{program.registrationEnabled ? (program.remaining > 0 ? `남은 자리 ${program.remaining}` : '모집 마감') : 'MVP 시범'}</em></div>
             <h2>{program.title}</h2><p>{program.description}</p>
             <div className="program-facts"><div><span>집결</span><b>{program.place}</b></div><div><span>페이스</span><b>{program.paceSec ? fmtPace(program.paceSec) : '함께 조율'}</b></div><div><span>참가비</span><b>{program.feeKrw ? `${program.feeKrw.toLocaleString()}원` : '무료'}</b></div></div>
             {program.host && <div className="program-host">
@@ -54,13 +54,13 @@ export default function ProgramsPage() {
               <div><span>LOCAL HOST</span><strong>{program.host.nickname}{program.host.phoneVerified && <i>인증</i>}</strong><p>{program.host.bio || `${program.host.homeArea}에서 활동하는 로컬 러너`}</p></div>
               <small>러닝 {program.host.runCount}회</small>
             </div>}
-            <button type="button" className={`program-join ${program.registered ? 'registered' : ''}`} disabled={busy === program.id || (!program.registered && program.remaining <= 0)} onClick={() => program.registered ? cancel(program) : join(program)}>{busy === program.id ? '처리 중…' : program.registered ? '참가 확정 · 취소하기' : program.remaining > 0 ? '이 러닝에 참가하기' : '모집이 마감됐어요'}</button>
+            <button type="button" className={`program-join ${program.registered ? 'registered' : ''}`} disabled={!program.registrationEnabled || busy === program.id || (!program.registered && program.remaining <= 0)} onClick={() => program.registered ? cancel(program) : join(program)}>{!program.registrationEnabled ? 'MVP 시범 일정 · 실제 신청 불가' : busy === program.id ? '처리 중…' : program.registered ? '참가 확정 · 취소하기' : program.remaining > 0 ? '이 러닝에 참가하기' : '모집이 마감됐어요'}</button>
           </div>
         </article>;
       })}
       {!loading && items.length === 0 && <div className="empty">예정된 로컬 러닝을 준비하고 있어요.</div>}
       {loading && <div className="empty">대구 러닝 일정을 불러오는 중이에요.</div>}
     </div>
-    <p className="program-safety">러닝 일정과 집결 장소는 운영 상황에 따라 변경될 수 있습니다. 참가 전 알림과 호스트 안내를 꼭 확인해 주세요.</p>
+    <p className="program-safety">현재 일정은 서비스 흐름 검증을 위한 MVP 시범 콘텐츠입니다. 정식 운영 전에는 신청·결제가 발생하지 않으며, 확정 일정은 별도로 안내합니다.</p>
   </main>;
 }

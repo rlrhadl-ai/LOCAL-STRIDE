@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
+import LiveBadge from '@/components/LiveBadge';
 import { api, mediaUrl } from '@/lib/api';
 import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation, RunProgram } from '@/lib/types';
 
@@ -13,7 +14,6 @@ const PROGRAM_KIND: Record<RunProgram['kind'], string> = {
 function PartnerGlyph() {
   return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M11 32c5-2 7-6 8-13 4 6 8 9 18 10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><path d="M12 35h25" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><circle cx="31" cy="16" r="4" fill="currentColor"/></svg>;
 }
-
 export default function Home() {
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -47,7 +47,11 @@ export default function Home() {
     <section className="home-hero">
       <div className="home-hero-meta"><span>DAEGU BORN · RUN TOGETHER</span><b>{weather ? `${weather.temp}° · ${weather.sky}` : '대구 러너 에디션'}</b></div>
       <h1>대구의 길을<br/><em>대구 사람과 달려요.</em></h1>
-      <p>토박이 러너가 고른 코스와 오늘 함께 뛸 사람을 한곳에서 만나보세요.</p>
+      <p>여행 중 현재 위치에서 코스를 추천받고, 달리는 동안 TourAPI 기반 관광지와 로컬 장소를 자동으로 발견하세요.</p>
+      <div className="home-data-proof">
+        <LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.cached ? '한국관광공사 TourAPI 캐시' : '한국관광공사 TourAPI'} />
+        <span>위치기반 관광정보 · 기상청 날씨 · 에어코리아 대기질</span>
+      </div>
       <div className="home-hero-actions"><Link href="/programs">이번 주 러닝 참여</Link><Link href="/courses">대구 코스 보기</Link></div>
     </section>
 
@@ -55,7 +59,7 @@ export default function Home() {
       <div className="home-section-head"><div><span>이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href="/programs">전체 일정</Link></div>
       {nextProgram ? <Link href="/programs" className="home-next-run">
         <time dateTime={nextProgram.startsAt} className={nextProgram.imageUrl ? 'with-photo' : ''}>{nextProgram.imageUrl && <img src={mediaUrl(nextProgram.imageUrl)} alt=""/>}<strong>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</strong><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
-        <div className="home-next-run-copy"><div><span>{PROGRAM_KIND[nextProgram.kind]}</span><em>남은 자리 {nextProgram.remaining}</em></div><h3>{nextProgram.title}</h3><p>{nextProgram.place} · {nextProgram.host?.nickname || '대구 로컬 호스트'}</p></div>
+        <div className="home-next-run-copy"><div><span>{PROGRAM_KIND[nextProgram.kind]} · MVP 시범</span><em>운영 준비 중</em></div><h3>{nextProgram.title}</h3><p>{nextProgram.place} · 실제 신청 전 운영 확정 예정</p></div>
         <span className="home-arrow" aria-hidden>→</span>
       </Link> : <div className="home-empty">다음 로컬 러닝을 준비하고 있어요.</div>}
     </section>
@@ -75,7 +79,7 @@ export default function Home() {
     </section>
 
     {(attraction || featuredPartner) && <section className="home-section">
-      <div className="home-section-head"><div><span>코스 밖의 대구</span><h2>달린 뒤, 조금 더 머물기</h2></div></div>
+      <div className="home-section-head"><div><span>코스 밖의 대구</span><h2>달린 뒤, 조금 더 머물기</h2></div>{nearby && <LiveBadge source={nearby.source} ms={nearby.fetchedMs} label={nearby.cached ? 'TourAPI 캐시' : 'TourAPI'} />}</div>
       <div className="home-local-grid">
         {attraction && <Link href="/spots" className="home-local-card spot"><div className="home-local-image"><img src={attraction.firstImage || '/images/local/suseong-lake-blue-run.jpg'} alt=""/></div><div><small>러닝 가까이 만나는 장소</small><h3>{attraction.title}</h3><p>{attraction.dist != null ? `수성못에서 약 ${(attraction.dist / 1000).toFixed(1)}km` : attraction.addr1}</p><b>대구 장소 더 보기 →</b></div></Link>}
         {featuredPartner && <Link href="/benefits" className="home-local-card benefit"><div className="home-partner-mark">{featuredPartner.imageUrl ? <img src={mediaUrl(featuredPartner.imageUrl)} alt=""/> : <PartnerGlyph/>}</div><div><small>{featuredPartner.category} · {featuredPartner.status === 'COMING_SOON' ? '제휴 준비 중' : '러너 혜택'}</small><h3>{featuredPartner.name}</h3><p>{featuredPartner.offerTitle}</p><b>완주 혜택 더 보기 →</b></div></Link>}

@@ -31,8 +31,16 @@ export interface NearbyResult {
   fetchedMs: number;
   endpoint: string;
   items: PoiItem[];
+  cached?: boolean;
   raw?: unknown; // 시연용: 첫 번째 원본 item
   error?: string;
+}
+
+const NEARBY_CACHE_TTL_MS = 5 * 60 * 1000;
+const nearbyCache = new Map<string, { expiresAt: number; value: NearbyResult }>();
+
+function nearbyCacheKey(lat: number, lng: number, radiusM: number, contentTypeId?: number, limit = 20) {
+  return [lat.toFixed(4), lng.toFixed(4), radiusM, contentTypeId ?? 'all', limit].join(':');
 }
 
 function buildUrl(path: string, params: Record<string, string | number>) {
@@ -76,6 +84,10 @@ export async function nearby(lat: number, lng: number, radiusM = 500, contentTyp
     const items = await nearbyFromDb(lat, lng, radiusM, limit);
     return { source: 'SEED', fetchedMs: Date.now() - started, endpoint, items, error: 'TOURAPI_KEY 미설정 — 저장 데이터 사용' };
   }
+  const cacheKey = nearbyCacheKey(lat, lng, radiusM, contentTypeId, limit);
+  const cached = nearbyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return { ...cached.value, fetchedMs: 0, cached: true };
+  if (cached) nearbyCache.delete(cacheKey);
   try {
     const params: Record<string, string | number> = { mapX: lng, mapY: lat, radius: radiusM, arrange: 'E', numOfRows: limit, pageNo: 1 };
     if (contentTypeId) params.contentTypeId = contentTypeId;
@@ -91,7 +103,10 @@ export async function nearby(lat: number, lng: number, radiusM = 500, contentTyp
       create: { contentId: p.contentId!, contentTypeId: p.contentTypeId, title: p.title, addr1: p.addr1, lat: p.lat, lng: p.lng, firstImage: p.firstImage, tel: p.tel, source: 'TOURAPI', raw: raw[i] },
       update: { title: p.title, addr1: p.addr1, lat: p.lat, lng: p.lng, firstImage: p.firstImage, tel: p.tel, fetchedAt: new Date(), raw: raw[i] },
     }).catch(() => null)));
-    return { source: 'TOURAPI', fetchedMs: Date.now() - started, endpoint, items, raw: raw[0] ?? null };
+    const result: NearbyResult = { source: 'TOURAPI', fetchedMs: Date.now() - started, endpoint, items, raw: raw[0] ?? null, cached: false };
+    nearbyCache.set(cacheKey, { expiresAt: Date.now() + NEARBY_CACHE_TTL_MS, value: result });
+    if (nearbyCache.size > 500) for (const [key, value] of nearbyCache) if (value.expiresAt <= Date.now()) nearbyCache.delete(key);
+    return result;
   } catch (e: any) {
     const items = await nearbyFromDb(lat, lng, radiusM, limit);
     return { source: 'SEED', fetchedMs: Date.now() - started, endpoint, items, error: `TourAPI 호출 실패 — ${e.message}` };

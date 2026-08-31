@@ -20,7 +20,6 @@ interface EventItem {
   course: { name: string; distanceM: number } | null;
   _count: { registrations: number };
 }
-
 const isPreview = (event: EventItem) => event.title.includes('PREVIEW') || event.description.includes('시범 대회');
 const cleanTitle = (value: string) => value.replace(/\s*·\s*PREVIEW$/, '');
 const cleanDescription = (value: string) => value.replace(/^\[MVP 시범 대회\]\s*/, '');
@@ -57,7 +56,7 @@ export default function EventsPage() {
               <div className="race-card-body">
                 <div className="race-main">
                   <div className="race-tags">
-                    <span className={`tag ${event.status === 'OPEN' ? 'green' : ''}`}>{event.status === 'OPEN' ? '접수 중' : event.status}</span>
+                    <span className={`tag ${event.status === 'OPEN' && !isPreview(event) ? 'green' : ''}`}>{isPreview(event) ? '접수 준비' : event.status === 'OPEN' ? '접수 중' : event.status}</span>
                     {isPreview(event) && <span className="tag gold">시범 대회</span>}
                     {event.registered && <span className="tag">참가 등록됨</span>}
                   </div>
@@ -68,7 +67,7 @@ export default function EventsPage() {
                     <div><dt>일시</dt><dd>{date.toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</dd></div>
                     <div><dt>장소</dt><dd>{event.place ?? '공지 예정'}</dd></div>
                   </dl>
-                  <div className="race-capacity"><span><b>{event._count.registrations}명</b> 참가 표시 · {remaining}자리 남음</span><strong>{event.feeKrw ? `${event.feeKrw.toLocaleString()}원` : '무료'}</strong></div>
+                  <div className="race-capacity"><span><b>{event._count.registrations}명</b> {isPreview(event) ? '시연 데이터' : `참가 · ${remaining}자리 남음`}</span><strong>{isPreview(event) ? '참가비 예정' : event.feeKrw ? `${event.feeKrw.toLocaleString()}원` : '무료'}</strong></div>
                   <div className="race-progress" aria-label={`정원 ${event.capacity}명 중 ${event._count.registrations}명`}><i style={{ width: `${progress}%` }} /></div>
                 </div>
                 <span className="community-arrow" aria-hidden="true">→</span>
