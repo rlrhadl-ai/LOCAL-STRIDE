@@ -9,7 +9,17 @@ interface Post { id: string; type: 'PACEMAKER' | 'MATE'; paceSec: number; meetAt
 interface RunnerProfile { user: { preferredPaceSec: number | null; homeArea: string } }
 const isPreview = (post: Post) => post.body.startsWith('[시범 모집]');
 const cleanBody = (value: string) => value.replace(/^\[시범 모집\]\s*/, '');
-const district = (value: string) => ['수성구', '달서구', '중구', '동구', '서구', '남구', '북구', '달성군', '군위군'].find((area) => value.includes(area)) || '기타';
+const district = (value: string) => {
+  const named = ['수성구', '달서구', '중구', '동구', '서구', '남구', '북구', '달성군', '군위군'].find((area) => value.includes(area));
+  if (named) return named;
+  if (/수성못|수성교|들안길/.test(value)) return '수성구';
+  if (/월광|달서/.test(value)) return '달서구';
+  if (/청라언덕|근대골목/.test(value)) return '중구';
+  if (/동촌유원지/.test(value)) return '동구';
+  if (/앞산|빨래터/.test(value)) return '남구';
+  if (/침산교/.test(value)) return '북구';
+  return '기타';
+};
 
 export default function MatesPage() {
   const [type, setType] = useState<'' | 'PACEMAKER' | 'MATE'>('');

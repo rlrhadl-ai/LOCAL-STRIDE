@@ -82,7 +82,9 @@ export function buildRunnerInsight(runs: InsightRun[], profile: InsightProfile):
   }, { 아침: 0, 낮: 0, 저녁: 0 } as Record<ActivityTime, number>);
   const favoriteTime = recent.length ? (Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as RunnerInsight['favoriteTime']) : '기록 수집 중';
   const referenceKm = longestKm || Math.max(3, Math.min(10, profile.weeklyGoalKm / 2));
-  const label = referenceKm >= 12 ? '장거리 도전 러너' : referenceKm >= 8 ? '10K 준비 러너' : referenceKm >= 5 ? '5K 안정 러너' : '5K 입문 러너';
+  const label = recent.length < 3
+    ? referenceKm >= 8 ? '10K 목표 러너' : '5K 목표 러너'
+    : referenceKm >= 12 ? '장거리 도전 러너' : referenceKm >= 8 ? '10K 준비 러너' : referenceKm >= 5 ? '5K 안정 러너' : '5K 입문 러너';
   return {
     label,
     sourceLabel: recent.length >= 3 ? '러닝 기록 기반' : '직접 설정 기반',
