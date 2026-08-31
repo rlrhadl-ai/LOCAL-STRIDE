@@ -44,7 +44,7 @@ export default function CrewsPage() {
 
   return (
     <main className="page community-page">
-      <AppHeader title="함께 달리기" right={<Link href="/crews/new" className="btn sm">+ 크루</Link>} />
+      <AppHeader title="함께 달리기" right={<Link href="/host" className="btn sm">개최하기</Link>} />
 
       <section className="community-hero">
         <span className="community-eyebrow">DAEGU RUNNING COMMUNITY</span>
