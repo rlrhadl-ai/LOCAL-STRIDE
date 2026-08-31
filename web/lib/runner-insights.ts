@@ -1,3 +1,5 @@
+import { daeguAreaFromText } from './daegu-areas';
+
 export interface InsightRun {
   distanceM: number;
   durationSec: number;
@@ -129,4 +131,3 @@ export function rankEvents(candidates: RecommendationCandidate[], insight: Runne
     .sort((a, b) => b.score - a.score || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 3);
 }
-import { daeguAreaFromText } from './daegu-areas';

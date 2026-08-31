@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { DAEGU_AREAS, daeguAreaFromText } from '@/lib/daegu-areas';
+import { useDaeguAreaFilter } from '@/lib/use-daegu-area-filter';
 import { fmtPace, type RunProgram } from '@/lib/types';
 
 const KIND: Record<RunProgram['kind'], string> = { MORNING: '아침런', AFTER_WORK: '퇴근런', INDEPENDENT: '독립런', THEME: '주제형 러닝', POPUP: '번개런' };
@@ -14,7 +15,7 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [area, setArea] = useState('전체');
+  const { areaFilter: area, setAreaFilter: setArea } = useDaeguAreaFilter();
 
   const load = () => api.get<{ items: RunProgram[] }>('/programs').then((result) => setItems(result.items)).finally(() => setLoading(false));
   useEffect(() => { load().catch(() => setMessage('러닝 일정을 잠시 불러오지 못했어요.')); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -62,7 +63,7 @@ export default function ProgramsPage() {
           </div>
         </article>;
       })}
-      {!loading && visibleItems.length === 0 && <div className="schedule-area-empty"><strong>{area === '전체' ? '예정된 로컬 러닝을 준비하고 있어요.' : `${area} 시범 프로그램을 모집하고 있어요.`}</strong>{area !== '전체' && <a href={`/host/proposal`}>이 지역 행사 제안하기 →</a>}</div>}
+      {!loading && visibleItems.length === 0 && <div className="schedule-area-empty"><strong>{area === '전체' ? '예정된 로컬 러닝을 준비하고 있어요.' : `${area}의 다음 프로그램을 준비하고 있어요.`}</strong>{area !== '전체' && <a href={`/host/proposal`}>이 지역 행사 제안하기 →</a>}</div>}
       {loading && <div className="empty">대구 러닝 일정을 불러오는 중이에요.</div>}
     </div>
     <p className="program-safety">현재 일정은 서비스 흐름 검증을 위한 MVP 시범 콘텐츠입니다. 정식 운영 전에는 신청·결제가 발생하지 않으며, 확정 일정은 별도로 안내합니다.</p>

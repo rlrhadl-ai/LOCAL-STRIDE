@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
+import { useDaeguArea } from '@/components/DaeguAreaProvider';
 import LiveBadge from '@/components/LiveBadge';
 import { api, mediaUrl } from '@/lib/api';
-import { DAEGU_AREAS, DEFAULT_DAEGU_AREA, daeguAreaByName } from '@/lib/daegu-areas';
+import { DAEGU_AREAS, daeguAreaFromCourse, daeguAreaFromText } from '@/lib/daegu-areas';
 import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation, RunProgram } from '@/lib/types';
 
 const PROGRAM_KIND: Record<RunProgram['kind'], string> = {
@@ -16,14 +17,15 @@ function PartnerGlyph() {
   return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M11 32c5-2 7-6 8-13 4 6 8 9 18 10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><path d="M12 35h25" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><circle cx="31" cy="16" r="4" fill="currentColor"/></svg>;
 }
 export default function Home() {
+  const { area, ready, setAreaSlug, locateNearest } = useDaeguArea();
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [nearby, setNearby] = useState<NearbyResult | null>(null);
   const [partners, setPartners] = useState<PartnerOffer[]>([]);
   const [banners, setBanners] = useState<HomeBanner[]>([]);
   const [programs, setPrograms] = useState<RunProgram[]>([]);
-  const [areaSlug, setAreaSlug] = useState(DEFAULT_DAEGU_AREA.slug);
-  const area = daeguAreaByName(areaSlug);
+  const [locationState, setLocationState] = useState<'idle' | 'loading'>('idle');
+  const [locationMessage, setLocationMessage] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -31,26 +33,35 @@ export default function Home() {
     api.get<{ items: RunProgram[] }>('/programs?limit=3').then((result) => alive && setPrograms(result.items)).catch(() => undefined);
     api.get<{ items: PartnerOffer[] }>('/partners').then((result) => alive && setPartners(result.items)).catch(() => undefined);
     api.get<{ items: HomeBanner[] }>('/banners').then((result) => alive && setBanners(result.items)).catch(() => undefined);
-    try { const saved = localStorage.getItem('localstride_daegu_area'); if (saved) setAreaSlug(daeguAreaByName(saved).slug); } catch { /* use default */ }
     return () => { alive = false; };
   }, []);
   useEffect(() => {
-    let alive = true; const selected = daeguAreaByName(areaSlug);
-    try { localStorage.setItem('localstride_daegu_area', selected.slug); } catch { /* storage is optional */ }
-    api.get<Recommendation>(`/recommend?km=5&themes=${encodeURIComponent(selected.themes.slice(0, 2).join(','))}&lat=${selected.lat}&lng=${selected.lng}`).then((result) => alive && setRec(result)).catch(() => undefined);
-    api.get<NearbyResult>(`/tour/nearby?lat=${selected.lat}&lng=${selected.lng}&radius=5000&limit=12`).then((result) => alive && setNearby(result)).catch(() => undefined);
+    if (!ready) return;
+    let alive = true; setRec(null); setNearby(null);
+    api.get<Recommendation>(`/recommend?km=5&themes=${encodeURIComponent(area.themes.slice(0, 2).join(','))}&lat=${area.lat}&lng=${area.lng}`).then((result) => alive && setRec(result)).catch(() => undefined);
+    api.get<NearbyResult>(`/tour/nearby?lat=${area.lat}&lng=${area.lng}&radius=5000&limit=12`).then((result) => alive && setNearby(result)).catch(() => undefined);
     return () => { alive = false; };
-  }, [areaSlug]);
+  }, [area, ready]);
 
-  const nextProgram = programs[0];
+  const nextProgram = programs.find((program) => daeguAreaFromText(`${program.place || ''} ${program.title} ${program.description}`)?.name === area.name);
   const best = rec?.best?.course;
   const bestCourse = best ? courses.find((course) => course.id === best.id) : null;
-  const localCourses = courses.filter((course) => `${course.areaName} ${course.name} ${course.description}`.includes(area.name) || `${course.name} ${course.description}`.includes(area.hub));
-  const coursePool = localCourses.length ? [...localCourses, ...courses.filter((course) => !localCourses.some((local) => local.id === course.id))] : courses;
-  const featuredCourses = (bestCourse ? [bestCourse, ...coursePool.filter((course) => course.id !== bestCourse.id)] : coursePool).slice(0, 2);
+  const localCourses = courses.filter((course) => daeguAreaFromCourse(course)?.name === area.name);
+  const localBestCourse = bestCourse && daeguAreaFromCourse(bestCourse)?.name === area.name ? bestCourse : null;
+  const featuredCourses = (localBestCourse ? [localBestCourse, ...localCourses.filter((course) => course.id !== localBestCourse.id)] : localCourses).slice(0, 2);
   const attraction = (nearby?.items ?? []).find((item) => [12, 14, 28].includes(item.contentTypeId));
   const featuredPartner = partners.find((partner) => partner.name === '러너스데이') ?? partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
   const weather = rec?.weather;
+  const runHref = area.runCourseSlug ? `/run/${area.runCourseSlug}` : `/courses?area=${area.slug}`;
+
+  const findMyArea = async () => {
+    setLocationState('loading'); setLocationMessage('현재 위치를 확인하고 있어요.');
+    try {
+      const nearest = await locateNearest();
+      setLocationMessage(`현재 위치에서 가장 가까운 러닝 거점을 ${nearest.area.hub}로 설정했어요 · 약 ${nearest.distanceKm.toFixed(1)}km`);
+    } catch (error) { setLocationMessage(error instanceof Error ? error.message : '현재 위치를 확인하지 못했어요.'); }
+    finally { setLocationState('idle'); }
+  };
 
   return <main className="page home-page">
     <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></Link>} />
@@ -58,37 +69,37 @@ export default function Home() {
     <section className="home-hero">
       <div className="home-hero-meta"><span>DAEGU BORN · RUN TOGETHER</span><b>{weather ? `${weather.temp}° · ${weather.sky}` : '대구 러너 에디션'} · {area.name}</b></div>
       <h1>대구의 길을<br/><em>대구 사람과 달려요.</em></h1>
-      <p>여행 중 현재 위치에서 코스를 추천받고, 달리는 동안 TourAPI 기반 관광지와 로컬 장소를 자동으로 발견하세요.</p>
+      <p>내 위치나 선택한 지역을 기준으로 코스를 찾고, 달리는 동안 TourAPI 기반 관광지와 로컬 장소를 발견하세요.</p>
       <div className="home-data-proof">
         <LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.cached ? '한국관광공사 TourAPI 캐시' : '한국관광공사 TourAPI'} />
         <span>{area.hub} 위치기반 관광정보 · 기상청 날씨 · 에어코리아 대기질</span>
       </div>
-      <div className="home-hero-actions"><Link href="/programs">이번 주 러닝 참여</Link><Link href="/courses">대구 코스 보기</Link></div>
+      <div className="home-hero-actions"><Link href={`/programs?area=${area.slug}`}>{area.name} 러닝 일정</Link><Link href={`/courses?area=${area.slug}`}>{area.name} 코스 보기</Link></div>
     </section>
 
-    <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><Link href="/regions">지역 전체보기</Link></div><div className="home-region-scroll">{DAEGU_AREAS.map((option) => <button type="button" className={option.slug === area.slug ? 'on' : ''} onClick={() => setAreaSlug(option.slug)} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
+    <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><div className="home-region-tools"><Link href="/regions">지역 전체보기</Link><button type="button" onClick={findMyArea} disabled={locationState === 'loading'}>{locationState === 'loading' ? '위치 확인 중' : '내 위치로 찾기'}</button></div></div>{locationMessage && <p className="home-location-message" role="status">{locationMessage}</p>}<div className="home-region-scroll">{DAEGU_AREAS.map((option) => <button type="button" className={option.slug === area.slug ? 'on' : ''} onClick={() => { setAreaSlug(option.slug); setLocationMessage(''); }} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
 
     <section className="home-section home-program-section">
-      <div className="home-section-head"><div><span>이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href="/programs">전체 일정</Link></div>
-      {nextProgram ? <Link href="/programs" className="home-next-run">
+      <div className="home-section-head"><div><span>{area.name} 이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href={`/programs?area=${area.slug}`}>{area.name} 일정</Link></div>
+      {nextProgram ? <Link href={`/programs?area=${area.slug}`} className="home-next-run">
         <time dateTime={nextProgram.startsAt} className={nextProgram.imageUrl ? 'with-photo' : ''}>{nextProgram.imageUrl && <img src={mediaUrl(nextProgram.imageUrl)} alt=""/>}<strong>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</strong><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
         <div className="home-next-run-copy"><div><span>{PROGRAM_KIND[nextProgram.kind]} · MVP 시범</span><em>운영 준비 중</em></div><h3>{nextProgram.title}</h3><p>{nextProgram.place} · 실제 신청 전 운영 확정 예정</p></div>
         <span className="home-arrow" aria-hidden>→</span>
-      </Link> : <div className="home-empty">다음 로컬 러닝을 준비하고 있어요.</div>}
+      </Link> : <div className="home-empty">{area.name}의 다음 로컬 러닝을 준비하고 있어요.</div>}
     </section>
 
     <nav className="home-quick" aria-label="빠른 메뉴">
-      <Link href="/courses"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m4 6 5-2 6 2 5-2v14l-5 2-6-2-5 2V6Z"/><path d="M9 4v14M15 6v14"/></svg></span><b>코스 찾기</b><small>대구 코스 탐색</small></Link>
-      <Link href="/run/suseong-blue-5k"><span className="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="14" cy="5" r="2"/><path d="m8 21 2-6 3-3 2 3 4 1M5 12l4-4 4 2"/></svg></span><b>지금 달리기</b><small>GPS 러닝 시작</small></Link>
-      <Link href="/mates"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 15a5 5 0 0 1 7 5"/></svg></span><b>러닝 메이트</b><small>함께 뛸 사람</small></Link>
+      <Link href={`/courses?area=${area.slug}`}><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m4 6 5-2 6 2 5-2v14l-5 2-6-2-5 2V6Z"/><path d="M9 4v14M15 6v14"/></svg></span><b>코스 찾기</b><small>{area.name} 코스 탐색</small></Link>
+      <Link href={runHref}><span className="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="14" cy="5" r="2"/><path d="m8 21 2-6 3-3 2 3 4 1M5 12l4-4 4 2"/></svg></span><b>{area.runCourseSlug ? '지금 달리기' : '코스 준비 상태'}</b><small>{area.runCourseSlug ? `${area.hub} GPS 시작` : '검증 코스 확인'}</small></Link>
+      <Link href={`/mates?area=${area.slug}`}><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 15a5 5 0 0 1 7 5"/></svg></span><b>러닝 메이트</b><small>{area.name} 함께 달리기</small></Link>
     </nav>
 
     <section className="home-section">
-      <div className="home-section-head"><div><span>토박이 추천</span><h2>대구를 가장 잘 느끼는 코스</h2></div><Link href="/courses">전체 코스</Link></div>
+      <div className="home-section-head"><div><span>{area.name} 토박이 추천</span><h2>{area.name}에서 만나는 추천 코스</h2></div><Link href={`/courses?area=${area.slug}`}>{area.name} 코스</Link></div>
       <div className="home-course-grid">{featuredCourses.map((course, index) => <Link href={`/courses/${course.slug}`} className="home-course-card" key={course.id}>
-        <div className={`home-course-visual tone-${index + 1}`}>{course.thumbnailUrl && <img src={mediaUrl(course.thumbnailUrl)} alt=""/>}<span>{(course.distanceM / 1000).toFixed(1)}K</span>{best?.id === course.id && <em>오늘의 추천</em>}</div>
+        <div className={`home-course-visual tone-${index + 1}`}>{course.thumbnailUrl && <img src={mediaUrl(course.thumbnailUrl)} alt=""/>}<span>{(course.distanceM / 1000).toFixed(1)}K</span>{localBestCourse?.id === course.id && <em>오늘의 추천</em>}</div>
         <div><small>{course.areaName || '대구광역시'} · {course.difficulty}</small><h3>{course.name}</h3><p>{course.themes.slice(0, 2).join(' · ')}</p></div>
-      </Link>)}</div>
+      </Link>)}</div>{featuredCourses.length === 0 && <div className="course-region-empty home-course-empty"><strong>{area.name}의 안전 검증 코스를 준비하고 있어요.</strong><p>검증 전에는 다른 지역의 러닝 시작 화면으로 보내지 않습니다. 먼저 주변 장소를 살펴보거나 코스를 제안해 주세요.</p><div><Link href={`/spots?area=${area.slug}`}>주변 장소 보기</Link><Link href="/courses/new">코스 제안하기</Link></div></div>}
     </section>
 
     {(attraction || featuredPartner) && <section className="home-section">

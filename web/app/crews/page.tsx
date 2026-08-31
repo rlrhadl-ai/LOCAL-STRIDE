@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
-import { DAEGU_AREAS } from '@/lib/daegu-areas';
+import { DAEGU_AREAS, daeguAreaFromText } from '@/lib/daegu-areas';
+import { useDaeguAreaFilter } from '@/lib/use-daegu-area-filter';
 import { fmtPace } from '@/lib/types';
 
 interface Crew {
@@ -33,7 +34,7 @@ const crewImage = (name: string) => {
 export default function CrewsPage() {
   const [lifestyle, setLifestyle] = useState('전체');
   const [items, setItems] = useState<Crew[]>([]);
-  const [area, setArea] = useState('전체');
+  const { areaFilter: area, setAreaFilter: setArea } = useDaeguAreaFilter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,12 +57,12 @@ export default function CrewsPage() {
       </section>
 
       <nav className="community-jumps" aria-label="함께 달리기 메뉴">
-        <Link href="/mates" className="community-jump">
+        <Link href={`/mates?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`} className="community-jump">
           <span className="community-jump-icon mate">M</span>
           <span><strong>러닝 메이트</strong><small>오늘 같이 달릴 사람</small></span>
           <b>→</b>
         </Link>
-        <Link href="/events" className="community-jump">
+        <Link href={`/events?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`} className="community-jump">
           <span className="community-jump-icon race">R</span>
           <span><strong>로컬 대회</strong><small>다음 목표를 고르기</small></span>
           <b>→</b>
@@ -76,6 +77,9 @@ export default function CrewsPage() {
       <div className="community-list">
         {visibleItems.map((crew, index) => {
           const run = crew.runs[0];
+          const courseArea = run?.course ? daeguAreaFromText(run.course.name)?.name : null;
+          const crewArea = daeguAreaFromText(crew.area)?.name;
+          const runLabel = run?.course && courseArea === crewArea ? run.course.name : `${crew.area.replace('대구 ', '')} 자율 코스`;
           return (
             <Link key={crew.id} href={`/crews/${crew.id}`} className="community-card">
               <div className={`community-mark tone-${index % 4}`} aria-hidden="true"><img src={crewImage(crew.name)} alt="" /></div>
@@ -92,7 +96,7 @@ export default function CrewsPage() {
                   <span><b>{crew._count.members}명</b><small>멤버</small></span>
                   <span><b>{crew.lifestyle.slice(0, 2).join(' · ')}</b><small>라이프스타일</small></span>
                 </div>
-                {run && <div className="community-next"><span>NEXT</span><b>{new Date(run.startsAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</b><small>{run.course?.name ?? '로컬 자율 코스'}</small></div>}
+                {run && <div className="community-next"><span>NEXT</span><b>{new Date(run.startsAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</b><small>{runLabel}</small></div>}
               </div>
               <span className="community-arrow" aria-hidden="true">→</span>
             </Link>

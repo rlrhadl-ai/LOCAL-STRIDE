@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api, mediaUrl } from '@/lib/api';
-import { DAEGU_AREAS, daeguAreaFromText } from '@/lib/daegu-areas';
+import { DAEGU_AREAS, daeguAreaFromCourse } from '@/lib/daegu-areas';
+import { useDaeguAreaFilter } from '@/lib/use-daegu-area-filter';
 import type { Course, Recommendation } from '@/lib/types';
 
 const KMS = [3, 5, 7, 10];
@@ -12,7 +13,7 @@ const THEMES = ['수변', '야경', '미식', '역사', '골목'];
 export default function CoursesPage() {
   const [km, setKm] = useState(5);
   const [theme, setTheme] = useState('수변');
-  const [area, setArea] = useState('전체');
+  const { areaFilter: area, setAreaFilter: setArea } = useDaeguAreaFilter();
   const [items, setItems] = useState<Course[]>([]);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,7 @@ export default function CoursesPage() {
     return () => { alive = false; };
   }, [km, theme]);
 
-  const courseArea = (course: Course) => course.slug.includes('modern-alley') ? '중구' : daeguAreaFromText(`${course.areaName} ${course.name} ${course.description}`)?.name || '대구 전체';
+  const courseArea = (course: Course) => daeguAreaFromCourse(course)?.name || '대구 전체';
   const visibleItems = area === '전체' ? items : items.filter((course) => courseArea(course) === area);
   const best = recommendation?.best;
   const bestCourse = best ? items.find((course) => course.id === best.course.id) : null;

@@ -9,10 +9,11 @@ export interface DaeguArea {
   summary: string;
   image: string;
   communityReady: boolean;
+  runCourseSlug?: string;
 }
 
 export const DAEGU_AREAS: DaeguArea[] = [
-  { slug: 'suseong', name: '수성구', fullName: '대구 수성구', hub: '수성못', lat: 35.8277, lng: 128.6177, themes: ['수변', '야경', '미식'], summary: '수성못과 들안길을 잇는 수변·미식 러닝', image: '/images/local/suseong-lake-blue-run.jpg', communityReady: true },
+  { slug: 'suseong', name: '수성구', fullName: '대구 수성구', hub: '수성못', lat: 35.8277, lng: 128.6177, themes: ['수변', '야경', '미식'], summary: '수성못과 들안길을 잇는 수변·미식 러닝', image: '/images/local/suseong-lake-blue-run.jpg', communityReady: true, runCourseSlug: 'suseong-blue-5k' },
   { slug: 'jung', name: '중구', fullName: '대구 중구', hub: '청라언덕', lat: 35.8685, lng: 128.5827, themes: ['역사', '골목', '문화'], summary: '청라언덕과 근대골목을 이야기로 잇는 도심 러닝', image: '/images/local/modern-alley-morning-run.jpg', communityReady: true },
   { slug: 'dong', name: '동구', fullName: '대구 동구', hub: '동촌유원지', lat: 35.8864, lng: 128.6512, themes: ['수변', '가족', '초보'], summary: '동촌유원지와 금호강을 따라가는 평지 러닝', image: '/images/local/sincheon-riverside-run.jpg', communityReady: true },
   { slug: 'seo', name: '서구', fullName: '대구 서구', hub: '이현공원', lat: 35.8726, lng: 128.5454, themes: ['공원', '일상', '초보'], summary: '이현공원과 생활권 녹지를 활용하는 일상 러닝', image: '/images/local/local-reward-checkin.jpg', communityReady: false },
@@ -24,6 +25,7 @@ export const DAEGU_AREAS: DaeguArea[] = [
 ];
 
 export const DEFAULT_DAEGU_AREA = DAEGU_AREAS[0];
+export const DAEGU_AREA_STORAGE_KEY = 'localstride_daegu_area';
 export const daeguAreaByName = (value?: string | null) => DAEGU_AREAS.find((area) => area.name === value || area.fullName === value || area.slug === value) ?? DEFAULT_DAEGU_AREA;
 
 export function daeguAreaFromText(value?: string | null): DaeguArea | null {
@@ -43,3 +45,22 @@ export function daeguAreaFromText(value?: string | null): DaeguArea | null {
 }
 
 export const DAEGU_AREA_OPTIONS = DAEGU_AREAS.map((area) => area.fullName);
+
+const toRadians = (value: number) => value * Math.PI / 180;
+export function distanceKmBetween(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const radius = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function nearestDaeguArea(lat: number, lng: number) {
+  return DAEGU_AREAS.map((area) => ({ area, distanceKm: distanceKmBetween(lat, lng, area.lat, area.lng) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)[0];
+}
+
+export function daeguAreaFromCourse(course: { slug: string; areaName?: string | null; name: string; description?: string | null }) {
+  if (course.slug.includes('modern-alley')) return daeguAreaByName('중구');
+  return daeguAreaFromText(`${course.areaName || ''} ${course.name} ${course.description || ''}`);
+}

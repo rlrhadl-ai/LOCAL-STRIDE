@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api, mediaUrl } from '@/lib/api';
 import { DAEGU_AREAS, daeguAreaFromText } from '@/lib/daegu-areas';
+import { useDaeguAreaFilter } from '@/lib/use-daegu-area-filter';
 
 interface EventItem {
   id: string;
@@ -28,7 +29,7 @@ const cleanDescription = (value: string) => value.replace(/^\[MVP 시범 대회\
 export default function EventsPage() {
   const [items, setItems] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [area, setArea] = useState('전체');
+  const { areaFilter: area, setAreaFilter: setArea } = useDaeguAreaFilter();
   useEffect(() => { api.get<{ items: EventItem[] }>('/events').then((result) => setItems(result.items)).catch(() => setItems([])).finally(() => setLoading(false)); }, []);
   const visibleItems = area === '전체' ? items : items.filter((event) => daeguAreaFromText(`${event.place || ''} ${event.title} ${event.description}`)?.name === area);
 

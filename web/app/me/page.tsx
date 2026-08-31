@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
+import { useDaeguArea } from '@/components/DaeguAreaProvider';
 import { api, mediaUrl } from '@/lib/api';
 import { DAEGU_AREA_OPTIONS } from '@/lib/daegu-areas';
 import { buildRunnerInsight, rankEvents, type InsightRun, type RecommendationCandidate } from '@/lib/runner-insights';
@@ -40,6 +41,7 @@ const paceSeconds = (value: string) => {
 
 export default function MePage() {
   const router = useRouter();
+  const { setAreaSlug } = useDaeguArea();
   const [me, setMe] = useState<Me | null>(null);
   const [edit, setEdit] = useState<EditProfile | null>(null);
   const [pace, setPace] = useState('');
@@ -91,7 +93,7 @@ export default function MePage() {
     event.preventDefault(); if (!edit) return; setSaving(true); setMsg('');
     try {
       await api.patch('/me', { ...edit, bio: edit.bio || null, weeklyGoalKm: Number(edit.weeklyGoalKm), preferredPaceSec: paceSeconds(pace) });
-      await load(); setMsg('프로필을 저장했습니다.');
+      setAreaSlug(edit.homeArea); await load(); setMsg('프로필을 저장하고 활동 지역을 추천 기준에 반영했습니다.');
     } catch (error) { setMsg(error instanceof Error ? error.message : '프로필을 저장하지 못했습니다'); }
     finally { setSaving(false); }
   }
@@ -138,12 +140,12 @@ export default function MePage() {
         {insight.recentRuns < 3 && <p className="runner-insight-note">아직 실제 기록이 충분하지 않아 주간 목표·선호 페이스로 초기 추천합니다. 3회 이상 완주하면 측정 기록 기반으로 전환됩니다.</p>}
       </div>
 
-      <div className="section-title recommendation-title"><div><span>WHY THIS EVENT</span><h2>나에게 맞는 행사</h2></div><small>실제 등록 일정만 사용</small></div>
+      <div className="section-title recommendation-title"><div><span>WHY THIS EVENT</span><h2>나에게 맞는 행사</h2></div><small>{insight.recentRuns >= 3 ? '기록 기반 적합도' : '등록 일정 비교 · 초기 추정'}</small></div>
       <div className="event-recommendation-list">{recommendations.map((recommendation) => <article className="event-recommendation" key={recommendation.id}>
-        <div className="event-recommendation-score"><strong>{recommendation.score}</strong><span>적합도</span></div>
+        <div className={`event-recommendation-score ${insight.recentRuns < 3 ? 'initial' : ''}`}><strong>{insight.recentRuns >= 3 ? recommendation.score : '초기'}</strong><span>{insight.recentRuns >= 3 ? '적합도' : '추천'}</span></div>
         <div className="event-recommendation-main"><div className="event-recommendation-tags"><span>{recommendation.typeLabel}</span>{recommendation.preview && <span>시범 일정</span>}<time>{new Date(recommendation.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}</time></div><h3>{recommendation.title}</h3><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{recommendation.caution && <p className="event-recommendation-caution">주의 · {recommendation.caution}</p>}<div className="event-recommendation-actions"><Link href={recommendation.href}>일정 보기</Link>{recommendationFeedback[recommendation.id] ? <span>의견 반영됨 · {recommendationFeedback[recommendation.id]}</span> : <><button type="button" onClick={() => saveRecommendationFeedback(recommendation.id, '관심 있음')}>관심 있어요</button><button type="button" onClick={() => saveRecommendationFeedback(recommendation.id, '시간 불일치')}>시간이 안 맞아요</button></>}</div></div>
       </article>)}{recommendations.length === 0 && <div className="empty compact">추천할 수 있는 예정 행사를 불러오는 중이에요.</div>}</div>
-      <p className="recommendation-policy">AI는 행사를 새로 만들지 않고 등록된 일정만 비교합니다. 거리·페이스·시간·활동 지역을 점수화하고 추천 근거와 주의사항을 함께 보여줍니다.</p>
+      <p className="recommendation-policy">AI는 행사를 새로 만들지 않고 등록된 일정만 비교합니다. 3회 미만에는 숫자 점수 대신 직접 설정을 활용한 초기 추천을 표시하고, 기록이 쌓이면 거리·페이스·시간·활동 지역 기반 적합도를 보여줍니다.</p>
     </section>}
 
     <section className="profile-editor card">

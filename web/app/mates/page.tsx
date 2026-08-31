@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
 import { DAEGU_AREAS, daeguAreaByName, daeguAreaFromText } from '@/lib/daegu-areas';
+import { useDaeguAreaFilter } from '@/lib/use-daegu-area-filter';
 import { fmtPace } from '@/lib/types';
 
 interface Post { id: string; type: 'PACEMAKER' | 'MATE'; paceSec: number; meetAt: string; place: string; slots: number; body: string; applied: boolean; isMine: boolean; author: { nickname: string; avatarColor: string }; _count: { applications: number } }
@@ -19,7 +20,7 @@ export default function MatesPage() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [timeFilter, setTimeFilter] = useState<'ALL' | '48H' | 'WEEKEND'>('ALL');
-  const [areaFilter, setAreaFilter] = useState('전체');
+  const { areaFilter, setAreaFilter } = useDaeguAreaFilter();
   const [paceOnly, setPaceOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ type: 'MATE' as 'MATE' | 'PACEMAKER', area: '수성구', distanceKm: 5, paceMin: 6, paceMax: 7, meetAt: '', place: '수성못 상화동산 입구', slots: 4, body: '', safety: false });
@@ -47,7 +48,7 @@ export default function MatesPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('create') === '1') setOpen(true);
     const requestedArea = params.get('area');
-    if (requestedArea) { const selected = daeguAreaByName(requestedArea); setAreaFilter(selected.name); setForm((current) => ({ ...current, area: selected.name, place: `${selected.hub} 공개 집결지` })); }
+    if (requestedArea && requestedArea !== 'all') { const selected = daeguAreaByName(requestedArea); setForm((current) => ({ ...current, area: selected.name, place: `${selected.hub} 공개 집결지` })); }
   }, []);
 
   const scoredItems = useMemo(() => items.map((post) => {
@@ -79,7 +80,7 @@ export default function MatesPage() {
 
   return (
     <main className="page community-page">
-      <AppHeader back title="러닝 메이트" right={<button className="btn sm" type="button" onClick={() => { setOpen((value) => !value); setStep(1); }}>{open ? '닫기' : '모집하기'}</button>} />
+      <AppHeader back title="러닝 메이트" right={<button className="btn sm" type="button" onClick={() => { if (!open && areaFilter !== '전체') { const selected = daeguAreaByName(areaFilter); setForm((current) => ({ ...current, area: selected.name, place: `${selected.hub} 공개 집결지` })); } setOpen((value) => !value); setStep(1); }}>{open ? '닫기' : '모집하기'}</button>} />
       <section className="mate-hero"><span className="community-eyebrow">RUN TOGETHER, TODAY</span><h2>내 페이스와 시간에 맞는<br />대구 러너를 찾아보세요.</h2><p>페이스·지역·시간을 비교해 잘 맞는 모집부터 보여드려요.</p></section>
 
       {open && <section className="card mate-form stack">
@@ -99,7 +100,7 @@ export default function MatesPage() {
       <div className="mate-list">{scoredItems.map(({ post, score, reasons }) => {
         const remaining = Math.max(0, post.slots - post._count.applications);
         return <article key={post.id} className="mate-card">
-          <div className="mate-card-top"><div className="mate-author"><span className="mate-avatar" style={{ background: post.author.avatarColor }}>{post.author.nickname.slice(0, 1)}</span><span><b>{post.author.nickname}</b><small>{new Date(post.meetAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</small></span></div><span className="mate-match-score">{score}% 맞춤</span></div>
+          <div className="mate-card-top"><div className="mate-author"><span className="mate-avatar" style={{ background: post.author.avatarColor }}>{post.author.nickname.slice(0, 1)}</span><span><b>{post.author.nickname}</b><small>{new Date(post.meetAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</small></span></div><span className="mate-match-score">{profile?.preferredPaceSec ? `${score}% 맞춤` : '초기 추천'}</span></div>
           <div className="mate-tags"><span className={`tag ${post.type === 'PACEMAKER' ? 'gold' : ''}`}>{post.type === 'PACEMAKER' ? '페이스메이커' : '러닝 메이트'}</span>{isPreview(post) && <span className="tag">시범 모집</span>}</div>
           <h3>{cleanBody(post.body) || `${post.place}에서 같이 달려요.`}</h3><div className="mate-match-reasons">{reasons.map((reason) => <span key={reason}>{reason}</span>)}</div>
           <div className="mate-route"><span><small>집결</small><b>{post.place}</b></span><span><small>페이스</small><b>{fmtPace(post.paceSec)}/km</b></span></div>

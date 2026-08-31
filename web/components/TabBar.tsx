@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useDaeguArea } from './DaeguAreaProvider';
 
 const I = {
   home: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></svg>,
@@ -12,14 +13,16 @@ const I = {
 
 export default function TabBar() {
   const p = usePathname() || '/';
+  const { area } = useDaeguArea();
   if (p.startsWith('/run/') || p.startsWith('/finish/') || p.startsWith('/admin') || p === '/login' || p === '/signup') return null;
   const on = (h: string) => (h === '/' ? p === '/' : p.startsWith(h));
+  const runHref = area.runCourseSlug ? `/run/${area.runCourseSlug}` : `/courses?area=${area.slug}`;
   return (
     <nav className="tabbar" aria-label="하단 메뉴">
       <Link href="/" className={`tab ${on('/') ? 'on' : ''}`}>{I.home}홈</Link>
-      <Link href="/courses" className={`tab ${on('/courses') ? 'on' : ''}`}>{I.courses}코스</Link>
-      <Link href="/run/suseong-blue-5k" className="tab cta"><span className="orb">{I.run}</span><span>러닝 시작</span></Link>
-      <Link href="/crews" className={`tab ${on('/crews') || on('/mates') || on('/events') ? 'on' : ''}`}>{I.crews}함께</Link>
+      <Link href={`/courses?area=${area.slug}`} className={`tab ${on('/courses') ? 'on' : ''}`}>{I.courses}코스</Link>
+      <Link href={runHref} className="tab cta"><span className="orb">{I.run}</span><span>{area.runCourseSlug ? '러닝 시작' : '코스 확인'}</span></Link>
+      <Link href={`/crews?area=${area.slug}`} className={`tab ${on('/crews') || on('/mates') || on('/events') ? 'on' : ''}`}>{I.crews}함께</Link>
       <Link href="/me" className={`tab ${on('/me') || on('/missions') || on('/rankings') ? 'on' : ''}`}>{I.me}마이</Link>
     </nav>
   );
