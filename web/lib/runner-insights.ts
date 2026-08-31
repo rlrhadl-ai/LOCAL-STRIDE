@@ -55,16 +55,7 @@ const median = (values: number[]) => {
 
 const paceOf = (run: InsightRun) => run.avgPaceSec || (run.distanceM > 0 ? Math.round(run.durationSec / (run.distanceM / 1000)) : null);
 
-const areaToken = (value: string) => {
-  const known = ['수성구', '달서구', '중구', '동구', '서구', '남구', '북구', '달성군', '군위군'];
-  const district = known.find((item) => value.includes(item));
-  if (district) return district;
-  if (/수성못|들안길/.test(value)) return '수성구';
-  if (/신천/.test(value)) return '남구';
-  if (/앞산/.test(value)) return '남구';
-  if (/월광|달서/.test(value)) return '달서구';
-  return '';
-};
+const areaToken = (value: string) => daeguAreaFromText(value)?.name || '';
 
 type ActivityTime = '아침' | '낮' | '저녁';
 const timeLabel = (date: Date): ActivityTime => date.getHours() < 10 ? '아침' : date.getHours() >= 17 ? '저녁' : '낮';
@@ -138,3 +129,4 @@ export function rankEvents(candidates: RecommendationCandidate[], insight: Runne
     .sort((a, b) => b.score - a.score || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 3);
 }
+import { daeguAreaFromText } from './daegu-areas';

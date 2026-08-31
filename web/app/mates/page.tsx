@@ -3,23 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
+import { DAEGU_AREAS, daeguAreaByName, daeguAreaFromText } from '@/lib/daegu-areas';
 import { fmtPace } from '@/lib/types';
 
 interface Post { id: string; type: 'PACEMAKER' | 'MATE'; paceSec: number; meetAt: string; place: string; slots: number; body: string; applied: boolean; isMine: boolean; author: { nickname: string; avatarColor: string }; _count: { applications: number } }
 interface RunnerProfile { user: { preferredPaceSec: number | null; homeArea: string } }
 const isPreview = (post: Post) => post.body.startsWith('[시범 모집]');
 const cleanBody = (value: string) => value.replace(/^\[시범 모집\]\s*/, '');
-const district = (value: string) => {
-  const named = ['수성구', '달서구', '중구', '동구', '서구', '남구', '북구', '달성군', '군위군'].find((area) => value.includes(area));
-  if (named) return named;
-  if (/수성못|수성교|들안길/.test(value)) return '수성구';
-  if (/월광|달서/.test(value)) return '달서구';
-  if (/청라언덕|근대골목/.test(value)) return '중구';
-  if (/동촌유원지/.test(value)) return '동구';
-  if (/앞산|빨래터/.test(value)) return '남구';
-  if (/침산교/.test(value)) return '북구';
-  return '기타';
-};
+const district = (value: string) => daeguAreaFromText(value)?.name || '기타';
 
 export default function MatesPage() {
   const [type, setType] = useState<'' | 'PACEMAKER' | 'MATE'>('');
@@ -31,7 +22,7 @@ export default function MatesPage() {
   const [areaFilter, setAreaFilter] = useState('전체');
   const [paceOnly, setPaceOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ type: 'MATE' as 'MATE' | 'PACEMAKER', distanceKm: 5, paceMin: 6, paceMax: 7, meetAt: '', place: '수성못 상화동산 입구', slots: 4, body: '', safety: false });
+  const [form, setForm] = useState({ type: 'MATE' as 'MATE' | 'PACEMAKER', area: '수성구', distanceKm: 5, paceMin: 6, paceMax: 7, meetAt: '', place: '수성못 상화동산 입구', slots: 4, body: '', safety: false });
   const [message, setMessage] = useState('');
 
   const load = () => { setLoading(true); return api.get<{ items: Post[] }>(`/mates${type ? `?type=${type}` : ''}`).then((result) => {
@@ -53,7 +44,10 @@ export default function MatesPage() {
         setForm((current) => ({ ...current, paceMin: Math.max(3, minutes - .5), paceMax: Math.min(15, minutes + .5) }));
       }
     }).catch(() => undefined);
-    if (new URLSearchParams(window.location.search).get('create') === '1') setOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('create') === '1') setOpen(true);
+    const requestedArea = params.get('area');
+    if (requestedArea) { const selected = daeguAreaByName(requestedArea); setAreaFilter(selected.name); setForm((current) => ({ ...current, area: selected.name, place: `${selected.hub} 공개 집결지` })); }
   }, []);
 
   const scoredItems = useMemo(() => items.map((post) => {
@@ -90,7 +84,7 @@ export default function MatesPage() {
 
       {open && <section className="card mate-form stack">
         <div className="host-stepper" aria-label="모집 작성 단계">{['언제·어디서', '어떻게', '확인'].map((label, index) => <span key={label} className={step >= index + 1 ? 'on' : ''}><b>{index + 1}</b>{label}</span>)}</div>
-        {step === 1 && <><div><span className="community-eyebrow">STEP 1</span><h3>언제, 어디서 만날까요?</h3></div><label className="field">일시<input className="input" type="datetime-local" value={form.meetAt} onChange={(event) => setForm({ ...form, meetAt: event.target.value })} /></label><label className="field">공개 집결 장소<input className="input" value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} /><small>집 주소가 아닌 광장·입구·안내소 같은 공개된 장소를 입력해 주세요.</small></label></>}
+        {step === 1 && <><div><span className="community-eyebrow">STEP 1</span><h3>언제, 어디서 만날까요?</h3></div><label className="field">지역<select className="input" value={form.area} onChange={(event) => { const selected = daeguAreaByName(event.target.value); setForm({ ...form, area: selected.name, place: `${selected.hub} 공개 집결지` }); }}>{DAEGU_AREAS.map((area) => <option value={area.name} key={area.slug}>{area.fullName} · {area.hub}</option>)}</select></label><label className="field">일시<input className="input" type="datetime-local" value={form.meetAt} onChange={(event) => setForm({ ...form, meetAt: event.target.value })} /></label><label className="field">공개 집결 장소<input className="input" value={form.place} onChange={(event) => setForm({ ...form, place: event.target.value })} /><small>집 주소가 아닌 광장·입구·안내소 같은 공개된 장소를 입력해 주세요.</small></label></>}
         {step === 2 && <><div><span className="community-eyebrow">STEP 2</span><h3>함께 달릴 방식을 정해요.</h3></div><div className="pills"><button type="button" className={`pill ${form.type === 'MATE' ? 'on' : ''}`} onClick={() => setForm({ ...form, type: 'MATE' })}>러닝 메이트</button><button type="button" className={`pill ${form.type === 'PACEMAKER' ? 'on' : ''}`} onClick={() => setForm({ ...form, type: 'PACEMAKER' })}>페이스메이커</button></div><div className="two"><label className="field">거리(km)<input className="input" type="number" min={1} max={50} step={.5} value={form.distanceKm} onChange={(event) => setForm({ ...form, distanceKm: Number(event.target.value) })} /></label><label className="field">모집 인원<input className="input" type="number" min={1} max={30} value={form.slots} onChange={(event) => setForm({ ...form, slots: Number(event.target.value) })} /></label></div><div className="two"><label className="field">느린 페이스(분/km)<input className="input" type="number" step={.5} min={3} max={15} value={form.paceMax} onChange={(event) => setForm({ ...form, paceMax: Number(event.target.value) })} /></label><label className="field">빠른 페이스(분/km)<input className="input" type="number" step={.5} min={3} max={15} value={form.paceMin} onChange={(event) => setForm({ ...form, paceMin: Number(event.target.value) })} /></label></div></>}
         {step === 3 && <><div><span className="community-eyebrow">STEP 3</span><h3>모집글을 확인해 주세요.</h3></div><label className="field">한마디<textarea className="input" rows={3} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} placeholder="예: 수성못 5K를 대화 가능한 속도로 같이 달려요" /></label><div className="host-preview"><small>공개될 내용</small><strong>{form.type === 'MATE' ? '러닝 메이트' : '페이스메이커'} · {form.distanceKm}km</strong><p>{form.place} · {form.paceMin.toFixed(1)}~{form.paceMax.toFixed(1)}분/km · {form.slots}명</p></div><label className="host-safety"><input type="checkbox" checked={form.safety} onChange={(event) => setForm({ ...form, safety: event.target.checked })} /><span>공개된 집결지를 사용했고, 무리한 페이스를 요구하지 않겠습니다.</span></label></>}
         <div className="host-form-actions">{step > 1 && <button className="btn light" type="button" onClick={() => setStep(step - 1)}>이전</button>}<button className="btn" type="button" disabled={!stepValid} onClick={() => step < 3 ? setStep(step + 1) : create()}>{step < 3 ? '다음' : '모집 올리기'}</button></div>
@@ -98,7 +92,7 @@ export default function MatesPage() {
 
       <section className="mate-match-panel"><div><span>MATCH BASIS</span><strong>{profile?.preferredPaceSec ? `${fmtPace(profile.preferredPaceSec)}/km · ${profile.homeArea}` : '초기 맞춤 순'}</strong><small>{profile?.preferredPaceSec ? '내 프로필의 페이스·활동 지역으로 정렬' : '내 정보에서 선호 페이스를 설정하면 맞춤도가 정확해져요.'}</small></div><Link href="/me">기준 수정</Link></section>
       <div className="pills community-filters mate-filters">{([['', '전체'], ['PACEMAKER', '페이스메이커'], ['MATE', '러닝 메이트']] as const).map(([value, label]) => <button key={value} type="button" className={`pill ${type === value ? 'on' : ''}`} onClick={() => setType(value)}>{label}</button>)}</div>
-      <div className="mate-filter-grid"><label>일정<select value={timeFilter} onChange={(event) => setTimeFilter(event.target.value as typeof timeFilter)}><option value="ALL">전체</option><option value="48H">48시간 이내</option><option value="WEEKEND">주말</option></select></label><label>지역<select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option>전체</option>{Array.from(new Set(items.map((post) => district(post.place)))).map((area) => <option key={area}>{area}</option>)}</select></label><label className="mate-check"><input type="checkbox" checked={paceOnly} onChange={(event) => setPaceOnly(event.target.checked)} />내 페이스 ±45초</label></div>
+      <div className="mate-filter-grid"><label>일정<select value={timeFilter} onChange={(event) => setTimeFilter(event.target.value as typeof timeFilter)}><option value="ALL">전체</option><option value="48H">48시간 이내</option><option value="WEEKEND">주말</option></select></label><label>지역<select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option>전체</option>{DAEGU_AREAS.map((area) => <option key={area.slug}>{area.name}</option>)}</select></label><label className="mate-check"><input type="checkbox" checked={paceOnly} onChange={(event) => setPaceOnly(event.target.checked)} />내 페이스 ±45초</label></div>
 
       {message && <div className="note mate-message" aria-live="polite">{message}</div>}
       <div className="section-title community-title"><div><span className="community-eyebrow">OPEN RUNS</span><h2>맞춤 러너 모집</h2></div><span>{scoredItems.length}개</span></div>

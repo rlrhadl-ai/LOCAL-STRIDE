@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
+import { DAEGU_AREAS } from '@/lib/daegu-areas';
 import { fmtPace } from '@/lib/types';
 
 interface Crew {
@@ -32,6 +33,7 @@ const crewImage = (name: string) => {
 export default function CrewsPage() {
   const [lifestyle, setLifestyle] = useState('전체');
   const [items, setItems] = useState<Crew[]>([]);
+  const [area, setArea] = useState('전체');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export default function CrewsPage() {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [lifestyle]);
+  const visibleItems = area === '전체' ? items : items.filter((crew) => crew.area.includes(area));
 
   return (
     <main className="page community-page">
@@ -65,11 +68,13 @@ export default function CrewsPage() {
         </Link>
       </nav>
 
-      <div className="section-title community-title"><div><span className="community-eyebrow">대구 크루</span><h2>어떤 시간에 달리나요?</h2></div><span>{items.length}개</span></div>
+      <div className="area-chip-scroll crew-area-filter" aria-label="크루 지역 필터"><button type="button" className={area === '전체' ? 'on' : ''} onClick={() => setArea('전체')}>전체</button>{DAEGU_AREAS.map((option) => <button type="button" className={area === option.name ? 'on' : ''} onClick={() => setArea(option.name)} key={option.slug}>{option.name}</button>)}</div>
+
+      <div className="section-title community-title"><div><span className="community-eyebrow">{area === '전체' ? '대구 크루' : `${area} 크루`}</span><h2>어떤 시간에 달리나요?</h2></div><span>{visibleItems.length}개</span></div>
       <div className="pills community-filters">{LIFESTYLES.map((label) => <button key={label} type="button" className={`pill ${lifestyle === label ? 'on' : ''}`} onClick={() => setLifestyle(label)}>{label}</button>)}</div>
 
       <div className="community-list">
-        {items.map((crew, index) => {
+        {visibleItems.map((crew, index) => {
           const run = crew.runs[0];
           return (
             <Link key={crew.id} href={`/crews/${crew.id}`} className="community-card">
@@ -93,7 +98,7 @@ export default function CrewsPage() {
             </Link>
           );
         })}
-        {!loading && items.length === 0 && <div className="empty">이 라이프스타일의 크루가 아직 없어요. 첫 크루를 만들어 보세요.</div>}
+        {!loading && visibleItems.length === 0 && <div className="schedule-area-empty"><strong>{area === '전체' ? '이 라이프스타일의 크루가 아직 없어요.' : `${area}에 조건이 맞는 크루가 아직 없어요.`}</strong><Link href="/crews/new">첫 크루 만들기 →</Link></div>}
         {loading && <div className="empty">대구 크루를 불러오는 중이에요.</div>}
       </div>
       <p className="note community-note">‘시범 크루’는 MVP 화면 검증을 위한 예시입니다. 일정과 집결지는 정식 운영 전 다시 알려드립니다.</p>

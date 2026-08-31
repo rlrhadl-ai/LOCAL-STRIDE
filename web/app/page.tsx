@@ -5,6 +5,7 @@ import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
 import LiveBadge from '@/components/LiveBadge';
 import { api, mediaUrl } from '@/lib/api';
+import { DAEGU_AREAS, DEFAULT_DAEGU_AREA, daeguAreaByName } from '@/lib/daegu-areas';
 import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation, RunProgram } from '@/lib/types';
 
 const PROGRAM_KIND: Record<RunProgram['kind'], string> = {
@@ -21,22 +22,32 @@ export default function Home() {
   const [partners, setPartners] = useState<PartnerOffer[]>([]);
   const [banners, setBanners] = useState<HomeBanner[]>([]);
   const [programs, setPrograms] = useState<RunProgram[]>([]);
+  const [areaSlug, setAreaSlug] = useState(DEFAULT_DAEGU_AREA.slug);
+  const area = daeguAreaByName(areaSlug);
 
   useEffect(() => {
     let alive = true;
     api.get<{ items: Course[] }>('/courses').then((result) => alive && setCourses(result.items)).catch(() => undefined);
-    api.get<Recommendation>('/recommend?km=5&themes=%EC%88%98%EB%B3%80%2C%EC%95%BC%EA%B2%BD').then((result) => alive && setRec(result)).catch(() => undefined);
     api.get<{ items: RunProgram[] }>('/programs?limit=3').then((result) => alive && setPrograms(result.items)).catch(() => undefined);
     api.get<{ items: PartnerOffer[] }>('/partners').then((result) => alive && setPartners(result.items)).catch(() => undefined);
     api.get<{ items: HomeBanner[] }>('/banners').then((result) => alive && setBanners(result.items)).catch(() => undefined);
-    api.get<NearbyResult>('/tour/nearby?lat=35.8277&lng=128.6177&radius=5000&limit=12').then((result) => alive && setNearby(result)).catch(() => undefined);
+    try { const saved = localStorage.getItem('localstride_daegu_area'); if (saved) setAreaSlug(daeguAreaByName(saved).slug); } catch { /* use default */ }
     return () => { alive = false; };
   }, []);
+  useEffect(() => {
+    let alive = true; const selected = daeguAreaByName(areaSlug);
+    try { localStorage.setItem('localstride_daegu_area', selected.slug); } catch { /* storage is optional */ }
+    api.get<Recommendation>(`/recommend?km=5&themes=${encodeURIComponent(selected.themes.slice(0, 2).join(','))}&lat=${selected.lat}&lng=${selected.lng}`).then((result) => alive && setRec(result)).catch(() => undefined);
+    api.get<NearbyResult>(`/tour/nearby?lat=${selected.lat}&lng=${selected.lng}&radius=5000&limit=12`).then((result) => alive && setNearby(result)).catch(() => undefined);
+    return () => { alive = false; };
+  }, [areaSlug]);
 
   const nextProgram = programs[0];
   const best = rec?.best?.course;
   const bestCourse = best ? courses.find((course) => course.id === best.id) : null;
-  const featuredCourses = (bestCourse ? [bestCourse, ...courses.filter((course) => course.id !== bestCourse.id)] : courses).slice(0, 2);
+  const localCourses = courses.filter((course) => `${course.areaName} ${course.name} ${course.description}`.includes(area.name) || `${course.name} ${course.description}`.includes(area.hub));
+  const coursePool = localCourses.length ? [...localCourses, ...courses.filter((course) => !localCourses.some((local) => local.id === course.id))] : courses;
+  const featuredCourses = (bestCourse ? [bestCourse, ...coursePool.filter((course) => course.id !== bestCourse.id)] : coursePool).slice(0, 2);
   const attraction = (nearby?.items ?? []).find((item) => [12, 14, 28].includes(item.contentTypeId));
   const featuredPartner = partners.find((partner) => partner.name === '러너스데이') ?? partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
   const weather = rec?.weather;
@@ -45,15 +56,17 @@ export default function Home() {
     <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></Link>} />
 
     <section className="home-hero">
-      <div className="home-hero-meta"><span>DAEGU BORN · RUN TOGETHER</span><b>{weather ? `${weather.temp}° · ${weather.sky}` : '대구 러너 에디션'}</b></div>
+      <div className="home-hero-meta"><span>DAEGU BORN · RUN TOGETHER</span><b>{weather ? `${weather.temp}° · ${weather.sky}` : '대구 러너 에디션'} · {area.name}</b></div>
       <h1>대구의 길을<br/><em>대구 사람과 달려요.</em></h1>
       <p>여행 중 현재 위치에서 코스를 추천받고, 달리는 동안 TourAPI 기반 관광지와 로컬 장소를 자동으로 발견하세요.</p>
       <div className="home-data-proof">
         <LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.cached ? '한국관광공사 TourAPI 캐시' : '한국관광공사 TourAPI'} />
-        <span>위치기반 관광정보 · 기상청 날씨 · 에어코리아 대기질</span>
+        <span>{area.hub} 위치기반 관광정보 · 기상청 날씨 · 에어코리아 대기질</span>
       </div>
       <div className="home-hero-actions"><Link href="/programs">이번 주 러닝 참여</Link><Link href="/courses">대구 코스 보기</Link></div>
     </section>
+
+    <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><Link href="/regions">지역 전체보기</Link></div><div className="home-region-scroll">{DAEGU_AREAS.map((option) => <button type="button" className={option.slug === area.slug ? 'on' : ''} onClick={() => setAreaSlug(option.slug)} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
 
     <section className="home-section home-program-section">
       <div className="home-section-head"><div><span>이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href="/programs">전체 일정</Link></div>
@@ -81,7 +94,7 @@ export default function Home() {
     {(attraction || featuredPartner) && <section className="home-section">
       <div className="home-section-head"><div><span>코스 밖의 대구</span><h2>달린 뒤, 조금 더 머물기</h2></div>{nearby && <LiveBadge source={nearby.source} ms={nearby.fetchedMs} label={nearby.cached ? 'TourAPI 캐시' : 'TourAPI'} />}</div>
       <div className="home-local-grid">
-        {attraction && <Link href="/spots" className="home-local-card spot"><div className="home-local-image"><img src={attraction.firstImage || '/images/local/suseong-lake-blue-run.jpg'} alt=""/></div><div><small>러닝 가까이 만나는 장소</small><h3>{attraction.title}</h3><p>{attraction.dist != null ? `수성못에서 약 ${(attraction.dist / 1000).toFixed(1)}km` : attraction.addr1}</p><b>대구 장소 더 보기 →</b></div></Link>}
+        {attraction && <Link href={`/spots?area=${area.slug}`} className="home-local-card spot"><div className="home-local-image"><img src={attraction.firstImage || area.image} alt=""/></div><div><small>{area.name} 러닝 가까이 만나는 장소</small><h3>{attraction.title}</h3><p>{attraction.dist != null ? `${area.hub}에서 약 ${(attraction.dist / 1000).toFixed(1)}km` : attraction.addr1}</p><b>{area.name} 장소 더 보기 →</b></div></Link>}
         {featuredPartner && <Link href="/benefits" className="home-local-card benefit"><div className="home-partner-mark">{featuredPartner.imageUrl ? <img src={mediaUrl(featuredPartner.imageUrl)} alt=""/> : <PartnerGlyph/>}</div><div><small>{featuredPartner.category} · {featuredPartner.status === 'COMING_SOON' ? '제휴 준비 중' : '러너 혜택'}</small><h3>{featuredPartner.name}</h3><p>{featuredPartner.offerTitle}</p><b>완주 혜택 더 보기 →</b></div></Link>}
       </div>
     </section>}

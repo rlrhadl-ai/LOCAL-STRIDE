@@ -6,7 +6,7 @@ import AppShell from '@/components/AppShell';
 export const metadata: Metadata = {
   metadataBase: new URL('https://localstride.kr'),
   title: 'LOCAL STRIDE · GPS로 발견하는 대구 러닝 관광',
-  description: 'GPS 러닝과 한국관광공사 TourAPI로 대구 관광지와 로컬 장소를 발견하는 수성구 기반 러닝 관광 플랫폼',
+  description: 'GPS 러닝과 한국관광공사 TourAPI로 대구 9개 구·군의 관광지와 로컬 장소를 발견하는 러닝 관광 플랫폼',
   alternates: { canonical: '/' },
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
   manifest: '/manifest.json',

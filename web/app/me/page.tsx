@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import { api, mediaUrl } from '@/lib/api';
+import { DAEGU_AREA_OPTIONS } from '@/lib/daegu-areas';
 import { buildRunnerInsight, rankEvents, type InsightRun, type RecommendationCandidate } from '@/lib/runner-insights';
 import { fmtPace, type RunProgram } from '@/lib/types';
 
@@ -150,7 +151,7 @@ export default function MePage() {
       <form onSubmit={saveProfile} className="profile-form">
         <label className="field">공개 닉네임<input className="input" value={edit.nickname} onChange={(event) => setEdit({ ...edit, nickname: event.target.value })} minLength={2} maxLength={16} required /></label>
         <label className="field">한 줄 소개<textarea className="input" rows={3} value={edit.bio || ''} onChange={(event) => setEdit({ ...edit, bio: event.target.value })} maxLength={160} placeholder="달리는 이유나 좋아하는 코스를 소개해 보세요" /></label>
-        <div className="profile-grid"><label className="field">활동 지역<input className="input" value={edit.homeArea} onChange={(event) => setEdit({ ...edit, homeArea: event.target.value })} maxLength={40} required /></label><label className="field">주간 목표(km)<input className="input" type="number" min="1" max="500" value={edit.weeklyGoalKm} onChange={(event) => setEdit({ ...edit, weeklyGoalKm: Number(event.target.value) })} required /></label></div>
+        <div className="profile-grid"><label className="field">활동 지역<select className="input" value={edit.homeArea} onChange={(event) => setEdit({ ...edit, homeArea: event.target.value })} required>{!DAEGU_AREA_OPTIONS.includes(edit.homeArea) && <option value={edit.homeArea}>{edit.homeArea}</option>}{DAEGU_AREA_OPTIONS.map((area) => <option value={area} key={area}>{area}</option>)}</select></label><label className="field">주간 목표(km)<input className="input" type="number" min="1" max="500" value={edit.weeklyGoalKm} onChange={(event) => setEdit({ ...edit, weeklyGoalKm: Number(event.target.value) })} required /></label></div>
         <label className="field">선호 페이스 (분/km)<input className="input" value={pace} onChange={(event) => setPace(event.target.value)} placeholder="예: 6:30" inputMode="numeric" /></label>
         <fieldset className="profile-colors"><legend>프로필 컬러</legend><div>{COLORS.map((color) => <button key={color} type="button" className={edit.avatarColor === color ? 'on' : ''} style={{ background: color }} aria-label={`${color} 선택`} onClick={() => setEdit({ ...edit, avatarColor: color })} />)}</div></fieldset>
         <button className="btn" disabled={saving}>{saving ? '저장 중…' : '프로필 저장'}</button>
