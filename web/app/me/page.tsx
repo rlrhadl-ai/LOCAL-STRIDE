@@ -41,7 +41,7 @@ const paceSeconds = (value: string) => {
 
 export default function MePage() {
   const router = useRouter();
-  const { setAreaSlug } = useDaeguArea();
+  const { area: exploreArea, setAreaSlug } = useDaeguArea();
   const [me, setMe] = useState<Me | null>(null);
   const [edit, setEdit] = useState<EditProfile | null>(null);
   const [pace, setPace] = useState('');
@@ -120,10 +120,12 @@ export default function MePage() {
     <AppHeader title="마이 페이지" right={user.isAuthenticated ? <span className="account-status">로그인됨</span> : <Link className="header-login" href="/login">로그인</Link>} />
 
     <section className="profile profile-rich">
-      <div className="who"><div className="avatar" style={{ background: user.avatarColor, color: '#fff' }}>{user.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt="" /> : user.nickname.slice(0, 1)}</div><div><div className="profile-name-row"><h3>{user.nickname}</h3>{user.role === 'ADMIN' && <span>ADMIN</span>}</div><div className="lv">{insight?.label || me.stats.levelName} · {user.homeArea}</div></div></div>
+      <div className="who"><div className="avatar" style={{ background: user.avatarColor, color: '#fff' }}>{user.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt="" /> : user.nickname.slice(0, 1)}</div><div><div className="profile-name-row"><h3>{user.nickname}</h3>{user.role === 'ADMIN' && <span>ADMIN</span>}</div><div className="lv">{insight?.label || me.stats.levelName} · 내 활동 지역 {user.homeArea}</div></div></div>
       {user.bio && <p className="profile-bio">{user.bio}</p>}
       <div className="prow"><div><b>{me.stats.totalKm.toFixed(1)}</b><span>총 거리 (km)</span></div><div><b>{me.stats.courses}</b><span>완주 코스</span></div><div><b>{me.stats.medals}</b><span>획득 메달</span></div></div>
     </section>
+
+    {exploreArea.name !== user.homeArea && <section className="profile-area-context"><div><span>현재 탐색 지역</span><strong>{exploreArea.name}</strong><small>내 활동 지역은 {user.homeArea}로 설정되어 있어요.</small></div><button type="button" onClick={() => setAreaSlug(user.homeArea)}>활동 지역으로 전환</button></section>}
 
     {!user.isAuthenticated && <section className="account-callout"><div><span>기록을 안전하게 보관하세요</span><h2>이 기기의 기록을 내 계정으로</h2><p>가입하면 지금까지의 러닝 기록을 그대로 연결하고 여러 기기에서 로그인할 수 있어요.</p></div><div><Link className="btn" href="/signup">회원가입</Link><Link className="btn light" href="/login">로그인</Link></div></section>}
 
@@ -137,18 +139,19 @@ export default function MePage() {
           <div><b>{insight.paceSec ? fmtPace(insight.paceSec) : '-'}</b><span>기준 페이스</span></div>
           <div><b>{insight.favoriteTime}</b><span>주 활동 시간</span></div>
         </div>
-        {insight.recentRuns < 3 && <p className="runner-insight-note">아직 실제 기록이 충분하지 않아 주간 목표·선호 페이스로 초기 추천합니다. 3회 이상 완주하면 측정 기록 기반으로 전환됩니다.</p>}
+        {insight.recentRuns < 3 && <p className="runner-insight-note">아직 실제 기록이 충분하지 않아 주간 목표·선호 페이스로 초기 추천합니다. 3회 이상 완주하면 측정 기록 기반으로 전환됩니다. <a href="#runner-profile">추천 기준 설정</a></p>}
       </div>
 
       <div className="section-title recommendation-title"><div><span>WHY THIS EVENT</span><h2>나에게 맞는 행사</h2></div><small>{insight.recentRuns >= 3 ? '기록 기반 적합도' : '등록 일정 비교 · 초기 추정'}</small></div>
-      <div className="event-recommendation-list">{recommendations.map((recommendation) => <article className="event-recommendation" key={recommendation.id}>
+      <div className="event-recommendation-list">{recommendations.slice(0, 1).map((recommendation) => <article className="event-recommendation" key={recommendation.id}>
         <div className={`event-recommendation-score ${insight.recentRuns < 3 ? 'initial' : ''}`}><strong>{insight.recentRuns >= 3 ? recommendation.score : '초기'}</strong><span>{insight.recentRuns >= 3 ? '적합도' : '추천'}</span></div>
         <div className="event-recommendation-main"><div className="event-recommendation-tags"><span>{recommendation.typeLabel}</span>{recommendation.preview && <span>시범 일정</span>}<time>{new Date(recommendation.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}</time></div><h3>{recommendation.title}</h3><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{recommendation.caution && <p className="event-recommendation-caution">주의 · {recommendation.caution}</p>}<div className="event-recommendation-actions"><Link href={recommendation.href}>일정 보기</Link>{recommendationFeedback[recommendation.id] ? <span>의견 반영됨 · {recommendationFeedback[recommendation.id]}</span> : <><button type="button" onClick={() => saveRecommendationFeedback(recommendation.id, '관심 있음')}>관심 있어요</button><button type="button" onClick={() => saveRecommendationFeedback(recommendation.id, '시간 불일치')}>시간이 안 맞아요</button></>}</div></div>
       </article>)}{recommendations.length === 0 && <div className="empty compact">추천할 수 있는 예정 행사를 불러오는 중이에요.</div>}</div>
+      {recommendations.length > 1 && <Link className="recommendation-more" href="/events">추천 행사 더 보기 · {recommendations.length - 1}개 →</Link>}
       <p className="recommendation-policy">AI는 행사를 새로 만들지 않고 등록된 일정만 비교합니다. 3회 미만에는 숫자 점수 대신 직접 설정을 활용한 초기 추천을 표시하고, 기록이 쌓이면 거리·페이스·시간·활동 지역 기반 적합도를 보여줍니다.</p>
     </section>}
 
-    <section className="profile-editor card">
+    <section className="profile-editor card" id="runner-profile">
       <div className="section-title profile-section-title"><div><span>RUNNER PROFILE</span><h2>내 프로필 관리</h2></div><small>{user.email || '기기 전용 익명 프로필'}</small></div>
       <form onSubmit={saveProfile} className="profile-form">
         <label className="field">공개 닉네임<input className="input" value={edit.nickname} onChange={(event) => setEdit({ ...edit, nickname: event.target.value })} minLength={2} maxLength={16} required /></label>

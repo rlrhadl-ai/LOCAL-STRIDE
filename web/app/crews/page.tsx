@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
@@ -36,6 +36,7 @@ export default function CrewsPage() {
   const [items, setItems] = useState<Crew[]>([]);
   const { areaFilter: area, setAreaFilter: setArea } = useDaeguAreaFilter();
   const [loading, setLoading] = useState(true);
+  const selectedAreaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -44,11 +45,14 @@ export default function CrewsPage() {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [lifestyle]);
+  useEffect(() => {
+    selectedAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [area]);
   const visibleItems = area === '전체' ? items : items.filter((crew) => crew.area.includes(area));
 
   return (
     <main className="page community-page">
-      <AppHeader title="함께 달리기" right={<Link href="/host" className="btn sm">개최하기</Link>} />
+      <AppHeader title="함께 달리기" right={<Link href="/host" className="btn sm gold">러닝 열기</Link>} />
 
       <section className="community-hero">
         <span className="community-eyebrow">DAEGU RUNNING COMMUNITY</span>
@@ -56,20 +60,13 @@ export default function CrewsPage() {
         <p>정기 크루부터 오늘의 러닝 메이트, 로컬 대회까지 한곳에서 찾아보세요.</p>
       </section>
 
-      <nav className="community-jumps" aria-label="함께 달리기 메뉴">
-        <Link href={`/mates?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`} className="community-jump">
-          <span className="community-jump-icon mate">M</span>
-          <span><strong>러닝 메이트</strong><small>오늘 같이 달릴 사람</small></span>
-          <b>→</b>
-        </Link>
-        <Link href={`/events?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`} className="community-jump">
-          <span className="community-jump-icon race">R</span>
-          <span><strong>로컬 대회</strong><small>다음 목표를 고르기</small></span>
-          <b>→</b>
-        </Link>
+      <nav className="community-tabs" aria-label="함께 달리기 유형">
+        <Link href={`/crews?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`} className="on" aria-current="page">크루</Link>
+        <Link href={`/mates?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`}>메이트</Link>
+        <Link href={`/events?area=${area === '전체' ? 'all' : DAEGU_AREAS.find((option) => option.name === area)?.slug || 'suseong'}`}>대회</Link>
       </nav>
 
-      <div className="area-chip-scroll crew-area-filter" aria-label="크루 지역 필터"><button type="button" className={area === '전체' ? 'on' : ''} onClick={() => setArea('전체')}>전체</button>{DAEGU_AREAS.map((option) => <button type="button" className={area === option.name ? 'on' : ''} onClick={() => setArea(option.name)} key={option.slug}>{option.name}</button>)}</div>
+      <div className="area-chip-scroll crew-area-filter" aria-label="크루 지역 필터"><button ref={area === '전체' ? selectedAreaRef : undefined} type="button" className={area === '전체' ? 'on' : ''} aria-pressed={area === '전체'} onClick={() => setArea('전체')}>전체</button>{DAEGU_AREAS.map((option) => <button ref={area === option.name ? selectedAreaRef : undefined} type="button" className={area === option.name ? 'on' : ''} aria-pressed={area === option.name} onClick={() => setArea(option.name)} key={option.slug}>{option.name}</button>)}</div>
 
       <div className="section-title community-title"><div><span className="community-eyebrow">{area === '전체' ? '대구 크루' : `${area} 크루`}</span><h2>어떤 시간에 달리나요?</h2></div><span>{visibleItems.length}개</span></div>
       <div className="pills community-filters">{LIFESTYLES.map((label) => <button key={label} type="button" className={`pill ${lifestyle === label ? 'on' : ''}`} onClick={() => setLifestyle(label)}>{label}</button>)}</div>

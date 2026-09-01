@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
@@ -26,6 +26,7 @@ export default function Home() {
   const [programs, setPrograms] = useState<RunProgram[]>([]);
   const [locationState, setLocationState] = useState<'idle' | 'loading'>('idle');
   const [locationMessage, setLocationMessage] = useState('');
+  const selectedAreaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -42,6 +43,10 @@ export default function Home() {
     api.get<NearbyResult>(`/tour/nearby?lat=${area.lat}&lng=${area.lng}&radius=5000&limit=12`).then((result) => alive && setNearby(result)).catch(() => undefined);
     return () => { alive = false; };
   }, [area, ready]);
+  useEffect(() => {
+    if (!ready) return;
+    selectedAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [area.slug, ready]);
 
   const nextProgram = programs.find((program) => daeguAreaFromText(`${program.place || ''} ${program.title} ${program.description}`)?.name === area.name);
   const best = rec?.best?.course;
@@ -52,7 +57,7 @@ export default function Home() {
   const attraction = (nearby?.items ?? []).find((item) => [12, 14, 28].includes(item.contentTypeId));
   const featuredPartner = partners.find((partner) => partner.name === '러너스데이') ?? partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
   const weather = rec?.weather;
-  const runHref = area.runCourseSlug ? `/run/${area.runCourseSlug}` : `/courses?area=${area.slug}`;
+  const runHref = area.runCourseSlug ? `/run/${area.runCourseSlug}` : `/spots?area=${area.slug}`;
 
   const findMyArea = async () => {
     setLocationState('loading'); setLocationMessage('현재 위치를 확인하고 있어요.');
@@ -74,23 +79,23 @@ export default function Home() {
         <LiveBadge source={nearby?.source} ms={nearby?.fetchedMs} label={nearby?.cached ? '한국관광공사 TourAPI 캐시' : '한국관광공사 TourAPI'} />
         <span>{area.hub} 위치기반 관광정보 · 기상청 날씨 · 에어코리아 대기질</span>
       </div>
-      <div className="home-hero-actions"><Link href={`/programs?area=${area.slug}`}>{area.name} 러닝 일정</Link><Link href={`/courses?area=${area.slug}`}>{area.name} 코스 보기</Link></div>
+      <div className="home-hero-actions"><Link href={`/courses?area=${area.slug}`}>{area.name} 코스 찾기</Link><Link href={`/programs?area=${area.slug}`}>{area.name} 러닝 일정</Link></div>
     </section>
 
-    <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><div className="home-region-tools"><Link href="/regions">지역 전체보기</Link><button type="button" onClick={findMyArea} disabled={locationState === 'loading'}>{locationState === 'loading' ? '위치 확인 중' : '내 위치로 찾기'}</button></div></div>{locationMessage && <p className="home-location-message" role="status">{locationMessage}</p>}<div className="home-region-scroll">{DAEGU_AREAS.map((option) => <button type="button" className={option.slug === area.slug ? 'on' : ''} onClick={() => { setAreaSlug(option.slug); setLocationMessage(''); }} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
+    <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><div className="home-region-tools"><Link href="/regions">지역 전체보기</Link><button type="button" onClick={findMyArea} disabled={locationState === 'loading'}>{locationState === 'loading' ? '위치 확인 중' : '내 위치로 찾기'}</button></div></div>{locationMessage && <p className="home-location-message" role="status">{locationMessage}</p>}<div className="home-region-scroll" aria-label="대구 지역 선택">{DAEGU_AREAS.map((option) => <button ref={option.slug === area.slug ? selectedAreaRef : undefined} type="button" className={option.slug === area.slug ? 'on' : ''} aria-pressed={option.slug === area.slug} onClick={() => { setAreaSlug(option.slug); setLocationMessage(''); }} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
 
-    <section className="home-section home-program-section">
+    {nextProgram && <section className="home-section home-program-section">
       <div className="home-section-head"><div><span>{area.name} 이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href={`/programs?area=${area.slug}`}>{area.name} 일정</Link></div>
-      {nextProgram ? <Link href={`/programs?area=${area.slug}`} className="home-next-run">
+      <Link href={`/programs?area=${area.slug}`} className="home-next-run">
         <time dateTime={nextProgram.startsAt} className={nextProgram.imageUrl ? 'with-photo' : ''}>{nextProgram.imageUrl && <img src={mediaUrl(nextProgram.imageUrl)} alt=""/>}<strong>{new Date(nextProgram.startsAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</strong><span>{new Date(nextProgram.startsAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span></time>
         <div className="home-next-run-copy"><div><span>{PROGRAM_KIND[nextProgram.kind]} · MVP 시범</span><em>운영 준비 중</em></div><h3>{nextProgram.title}</h3><p>{nextProgram.place} · 실제 신청 전 운영 확정 예정</p></div>
         <span className="home-arrow" aria-hidden>→</span>
-      </Link> : <div className="home-empty">{area.name}의 다음 로컬 러닝을 준비하고 있어요.</div>}
-    </section>
+      </Link>
+    </section>}
 
     <nav className="home-quick" aria-label="빠른 메뉴">
       <Link href={`/courses?area=${area.slug}`}><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m4 6 5-2 6 2 5-2v14l-5 2-6-2-5 2V6Z"/><path d="M9 4v14M15 6v14"/></svg></span><b>코스 찾기</b><small>{area.name} 코스 탐색</small></Link>
-      <Link href={runHref}><span className="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="14" cy="5" r="2"/><path d="m8 21 2-6 3-3 2 3 4 1M5 12l4-4 4 2"/></svg></span><b>{area.runCourseSlug ? '지금 달리기' : '코스 준비 상태'}</b><small>{area.runCourseSlug ? `${area.hub} GPS 시작` : '검증 코스 확인'}</small></Link>
+      <Link href={runHref}><span className="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="14" cy="5" r="2"/><path d="m8 21 2-6 3-3 2 3 4 1M5 12l4-4 4 2"/></svg></span><b>{area.runCourseSlug ? '지금 달리기' : '주변 장소'}</b><small>{area.runCourseSlug ? `${area.hub} GPS 시작` : `${area.hub} 먼저 보기`}</small></Link>
       <Link href={`/mates?area=${area.slug}`}><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 15a5 5 0 0 1 7 5"/></svg></span><b>러닝 메이트</b><small>{area.name} 함께 달리기</small></Link>
     </nav>
 
@@ -99,7 +104,7 @@ export default function Home() {
       <div className="home-course-grid">{featuredCourses.map((course, index) => <Link href={`/courses/${course.slug}`} className="home-course-card" key={course.id}>
         <div className={`home-course-visual tone-${index + 1}`}>{course.thumbnailUrl && <img src={mediaUrl(course.thumbnailUrl)} alt=""/>}<span>{(course.distanceM / 1000).toFixed(1)}K</span>{localBestCourse?.id === course.id && <em>오늘의 추천</em>}</div>
         <div><small>{course.areaName || '대구광역시'} · {course.difficulty}</small><h3>{course.name}</h3><p>{course.themes.slice(0, 2).join(' · ')}</p></div>
-      </Link>)}</div>{featuredCourses.length === 0 && <div className="course-region-empty home-course-empty"><strong>{area.name}의 안전 검증 코스를 준비하고 있어요.</strong><p>검증 전에는 다른 지역의 러닝 시작 화면으로 보내지 않습니다. 먼저 주변 장소를 살펴보거나 코스를 제안해 주세요.</p><div><Link href={`/spots?area=${area.slug}`}>주변 장소 보기</Link><Link href="/courses/new">코스 제안하기</Link></div></div>}
+      </Link>)}</div>{featuredCourses.length === 0 && <div className="course-region-empty home-course-empty"><span className="empty-count">공개 코스 0개</span><strong>{area.name}의 첫 러닝 코스를 준비하고 있어요.</strong><p>보행 안전과 실제 경로가 확인된 코스만 공개합니다. 그동안 {area.hub} 주변 장소를 먼저 만나보세요.</p><div><Link href={`/spots?area=${area.slug}`}>주변 장소 보기</Link><Link href="/courses/new">코스 제안하기</Link></div></div>}
     </section>
 
     {(attraction || featuredPartner) && <section className="home-section">

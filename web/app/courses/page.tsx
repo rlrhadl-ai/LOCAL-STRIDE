@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import { api, mediaUrl } from '@/lib/api';
@@ -17,6 +17,7 @@ export default function CoursesPage() {
   const [items, setItems] = useState<Course[]>([]);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(true);
+  const selectedAreaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let alive = true; setLoading(true);
@@ -28,6 +29,9 @@ export default function CoursesPage() {
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [km, theme]);
+  useEffect(() => {
+    selectedAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [area]);
 
   const courseArea = (course: Course) => daeguAreaFromCourse(course)?.name || '대구 전체';
   const visibleItems = area === '전체' ? items : items.filter((course) => courseArea(course) === area);
@@ -35,11 +39,11 @@ export default function CoursesPage() {
   const bestCourse = best ? items.find((course) => course.id === best.course.id) : null;
   const visibleBestCourse = bestCourse && (area === '전체' || courseArea(bestCourse) === area) ? bestCourse : visibleItems[0] || null;
   return <main className="page courses-page">
-    <AppHeader back title="대구 러닝 코스" right={<Link href="/courses/new" className="btn sm">+ 만들기</Link>}/>
+    <AppHeader back title="대구 러닝 코스" right={<Link href="/courses/new" className="btn sm light">코스 제안</Link>}/>
     <section className="course-finder-intro"><span>RUN YOUR DAEGU</span><h1>오늘은 어떤 대구를<br/>달리고 싶나요?</h1><p>거리와 분위기를 고르면 현재 날씨까지 살펴 가장 잘 맞는 코스를 찾아드려요.</p></section>
 
     <section className="course-controls" aria-label="추천 조건">
-      <div><span>지역</span><div className="course-area-options"><button type="button" className={area === '전체' ? 'on' : ''} onClick={() => setArea('전체')}>대구 전체</button>{DAEGU_AREAS.map((value) => <button type="button" className={area === value.name ? 'on' : ''} onClick={() => setArea(value.name)} key={value.slug}>{value.name}</button>)}</div></div>
+      <div><span>지역</span><div className="course-area-options" aria-label="코스 지역 선택"><button ref={area === '전체' ? selectedAreaRef : undefined} type="button" className={area === '전체' ? 'on' : ''} aria-pressed={area === '전체'} onClick={() => setArea('전체')}>대구 전체</button>{DAEGU_AREAS.map((value) => <button ref={area === value.name ? selectedAreaRef : undefined} type="button" className={area === value.name ? 'on' : ''} aria-pressed={area === value.name} onClick={() => setArea(value.name)} key={value.slug}>{value.name}</button>)}</div></div>
       <div><span>거리</span><div>{KMS.map((value) => <button type="button" className={km === value ? 'on' : ''} onClick={() => setKm(value)} key={value}>{value}km</button>)}</div></div>
       <div><span>분위기</span><div>{THEMES.map((value) => <button type="button" className={theme === value ? 'on' : ''} onClick={() => setTheme(value)} key={value}>{value}</button>)}</div></div>
     </section>
@@ -50,10 +54,11 @@ export default function CoursesPage() {
     </Link>}
 
     <div className="course-catalog-head"><div><span>DAEGU ROUTE</span><h2>{area === '전체' ? theme : `${area} · ${theme}`} 코스</h2></div><small>{loading ? '불러오는 중' : `${visibleItems.length}개`}</small></div>
-    <div className="course-catalog">{visibleItems.map((course, index) => <Link className="catalog-course" href={`/courses/${course.slug}`} key={course.id}>
+    {loading && <div className="course-loading" role="status" aria-label="코스를 불러오는 중"><span/><span/><span/></div>}
+    {!loading && <div className="course-catalog">{visibleItems.map((course, index) => <Link className="catalog-course" href={`/courses/${course.slug}`} key={course.id}>
       <div className={`catalog-thumb tone-${(index % 4) + 1}`}>{course.thumbnailUrl && <img src={mediaUrl(course.thumbnailUrl)} alt=""/>}<span>{(course.distanceM / 1000).toFixed(1)}K</span></div>
       <div><small>{course.areaName || '대구광역시'} · {course.difficulty}</small><h3>{course.name}</h3><p>{course.description || '대구의 풍경과 이야기를 가까이에서 만나는 러닝 코스'}</p><div>{course.themes.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div></div><b aria-hidden>→</b>
-    </Link>)}</div>
-    {!loading && visibleItems.length === 0 && <div className="course-region-empty"><strong>{area === '전체' ? '대구 전체' : area} · {theme} 코스는 검증 준비 중이에요.</strong><p>보행 안전·통행·공사 정보를 확인한 코스만 공개합니다. 먼저 주변 관광지를 탐색하거나 코스를 제안해 보세요.</p><div><Link href={`/spots?area=${DAEGU_AREAS.find((item) => item.name === area)?.slug || 'suseong'}`}>주변 장소 보기</Link><Link href="/courses/new">코스 제안하기</Link></div></div>}
+    </Link>)}</div>}
+    {!loading && visibleItems.length === 0 && <div className="course-region-empty"><span className="empty-count">공개 코스 0개</span><strong>{area === '전체' ? '대구 전체' : area} · {theme} 코스를 준비하고 있어요.</strong><p>보행 안전·통행·공사 정보를 확인한 코스만 공개합니다. 먼저 주변 관광지를 탐색하거나 코스를 제안해 보세요.</p><div><Link href={`/spots?area=${DAEGU_AREAS.find((item) => item.name === area)?.slug || 'suseong'}`}>주변 장소 보기</Link><Link href="/courses/new">코스 제안하기</Link></div></div>}
   </main>;
 }

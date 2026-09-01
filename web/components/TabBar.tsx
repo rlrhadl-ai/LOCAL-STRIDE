@@ -21,7 +21,7 @@ export default function TabBar() {
     <nav className="tabbar" aria-label="하단 메뉴">
       <Link href="/" className={`tab ${on('/') ? 'on' : ''}`}>{I.home}홈</Link>
       <Link href={`/courses?area=${area.slug}`} className={`tab ${on('/courses') ? 'on' : ''}`}>{I.courses}코스</Link>
-      <Link href={runHref} className="tab cta"><span className="orb">{I.run}</span><span>{area.runCourseSlug ? '러닝 시작' : '코스 확인'}</span></Link>
+      <Link href={runHref} className="tab cta" aria-label={area.runCourseSlug ? `${area.name} 러닝 시작` : `${area.name} 러닝 코스 선택`}><span className="orb">{I.run}</span><span>러닝</span></Link>
       <Link href={`/crews?area=${area.slug}`} className={`tab ${on('/crews') || on('/mates') || on('/events') ? 'on' : ''}`}>{I.crews}함께</Link>
       <Link href="/me" className={`tab ${on('/me') || on('/missions') || on('/rankings') ? 'on' : ''}`}>{I.me}마이</Link>
     </nav>
