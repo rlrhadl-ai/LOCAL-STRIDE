@@ -113,10 +113,10 @@ export default function MePage() {
     catch (error) { setMsg(error instanceof Error ? error.message : '쿠폰을 처리하지 못했습니다'); }
   }
 
-  if (!me || !edit) return <main className="page"><AppHeader title="마이" /><div className="empty">{msg || '프로필을 불러오는 중…'}</div></main>;
+  if (!me || !edit) return <main className="page me-page"><AppHeader title="마이" /><div className="empty">{msg || '프로필을 불러오는 중…'}</div></main>;
   const user = me.user;
   const availableRewards = me.coupons.filter((coupon) => !coupon.usedAt);
-  return <main className="page">
+  return <main className="page me-page">
     <AppHeader title="마이 페이지" right={user.isAuthenticated ? <span className="account-status">로그인됨</span> : <Link className="header-login" href="/login">로그인</Link>} />
 
     <section className="profile profile-rich">

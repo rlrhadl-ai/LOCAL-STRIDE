@@ -987,3 +987,118 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
 @media (prefers-reduced-motion: reduce) {
   .course-loading span::after { animation: none; }
 }
+
+/* 2026-09 가독성 규격: 캡션 11px · 보조문 12px · 본문 13px 이상 */
+.live-badge, .tag { font-size: 11px; }
+.note { font-size: 12px; line-height: 1.6; }
+.section-title span, .section-title a, .section-title small { font-size: 11.5px; }
+.pill { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+
+/* 스크롤 중에도 시각적 위치가 흔들리지 않는 하단 내비게이션 */
+.tabbar { position: fixed !important; inset-block-end: 0; bottom: 0 !important; z-index: 1000; transform: translate3d(-50%, 0, 0); backface-visibility: hidden; overscroll-behavior: contain; }
+.tabbar, .tabbar * { transition-property: color, background-color, box-shadow; }
+.tab { min-height: 48px; font-size: 12px; touch-action: manipulation; }
+.tab.cta { transform: translateY(-12px); }
+.tab.cta .orb { width: 50px; height: 50px; }
+
+/* 홈 */
+.home-hero-meta span { font-size: 10.5px; }
+.home-hero-meta span { letter-spacing: .09em; white-space: nowrap; }
+.home-hero { min-height: 0; }
+.home-hero-actions { position: static; margin-top: 15px; }
+.home-data-proof > span:last-child { font-size: 11px; }
+.home-region-head span, .home-section-head span { font-size: 10.5px; }
+.home-region-head p { font-size: 12px; }
+.home-region-tools a, .home-region-tools button { font-size: 11.5px; }
+.home-region-scroll small { font-size: 10.5px; }
+.home-quick b { font-size: 12.5px; }
+.home-quick small { font-size: 10.5px; }
+.home-course-card small, .home-local-card small { font-size: 11px; }
+.home-course-card p, .home-local-card p { font-size: 12px; line-height: 1.5; }
+.home-local-card > div:last-child > b { font-size: 11.5px; }
+
+/* 대구 9개 구·군 */
+.region-hero > span { font-size: 10.5px; }
+.region-hero > p { font-size: 13px; line-height: 1.65; }
+.region-hero > div span { font-size: 10.5px; }
+.region-proof strong, .region-proof span { font-size: 11px; }
+.region-title > div > span { font-size: 10.5px; }
+.region-title small { font-size: 11px; }
+.region-card-image > em { font-size: 10.5px; }
+.region-card-copy > small { font-size: 11px; }
+.region-card-copy > p { font-size: 12px; line-height: 1.6; }
+.region-theme-row { flex-wrap: wrap; gap: 6px; }
+.region-theme-row span { padding: 5px 8px; font-size: 10.5px; }
+.region-card dt { font-size: 10px; }
+.region-actions a { min-height: 44px; display: grid; place-items: center; padding: 9px; font-size: 11.5px; }
+.region-disclaimer { font-size: 11.5px; line-height: 1.65; }
+
+/* 함께 · 메이트 · 대회 */
+.community-eyebrow, .community-title .community-eyebrow { font-size: 10.5px; }
+.community-hero p, .race-hero p, .mate-hero p { font-size: 13px; }
+.community-card-main > p { font-size: 12px; }
+.community-area { font-size: 11px; }
+.community-stats b { font-size: 12px; }
+.community-stats small { font-size: 10.5px; }
+.community-next span { font-size: 10px; }
+.community-next b { font-size: 11px; }
+.community-next small { font-size: 10.5px; }
+.race-hero > div span { font-size: 11px; }
+.race-date span, .race-date small { font-size: 10px; }
+.race-cover-dday { font-size: 10.5px; }
+.race-copy { font-size: 12px; line-height: 1.55; }
+.race-facts dt { font-size: 10.5px; }
+.race-facts dd, .race-capacity { font-size: 11px; }
+.mate-author small { font-size: 11px; }
+.mate-route small { font-size: 10.5px; }
+.mate-route b { font-size: 12px; }
+.mate-match-panel span { font-size: 10px; }
+.mate-match-panel strong { font-size: 12px; }
+.mate-match-panel small { font-size: 11px; }
+.mate-match-panel a { min-height: 38px; display: grid; place-items: center; font-size: 11px; }
+.mate-filter-grid > label, .mate-filter-grid .mate-check { font-size: 11px; }
+.mate-filter-grid select { min-height: 42px; font-size: 12px; }
+.mate-match-score { font-size: 10.5px; }
+.mate-match-reasons span { font-size: 10.5px; }
+
+/* 장소 탐색 */
+.local-content-intro > span { font-size: 10.5px; }
+.local-content-intro p { font-size: 13px; }
+.area-switcher span { font-size: 10px; }
+.area-switcher strong { font-size: 13px; }
+.area-switcher small { font-size: 11px; }
+.area-switcher select { min-height: 44px; font-size: 12px; }
+.spot-page-image em { font-size: 10.5px; }
+.spot-page-card small { font-size: 11px; }
+.spot-page-card p { font-size: 12px; }
+.spot-page-card address, .benefit-page-card address { font-size: 11px; }
+.public-data-proof > span:last-child { font-size: 11px; line-height: 1.5; }
+
+/* 마이 · AI 추천 */
+.me-page .profile-name-row span { font-size: 10px; }
+.me-page .profile .prow span { font-size: 11.5px; }
+.me-page .profile-area-context span { font-size: 10.5px; }
+.me-page .profile-area-context small { font-size: 11px; }
+.me-page .profile-area-context button { min-height: 42px; font-size: 11px; }
+.me-page .account-callout span, .me-page .profile-section-title > div > span { font-size: 10.5px; }
+.me-page .profile-section-title small { font-size: 11.5px; }
+.me-page .runner-insight-head p { font-size: 11.5px; }
+.me-page .runner-insight-head > span { font-size: 10.5px; }
+.me-page .runner-insight-metrics span { font-size: 10.5px; }
+.me-page .runner-insight-note { font-size: 11.5px; }
+.me-page .recommendation-title > div > span { font-size: 10.5px; }
+.me-page .event-recommendation-score span { font-size: 9.5px; }
+.me-page .event-recommendation-tags span { font-size: 10.5px; }
+.me-page .event-recommendation-tags time { font-size: 10.5px; }
+.me-page .event-recommendation ul { font-size: 11.5px; }
+.me-page .event-recommendation-caution { font-size: 11px; }
+.me-page .recommendation-policy { font-size: 11px; }
+.me-page small { line-height: 1.45; }
+
+@media (min-width: 1100px) {
+  .app-stage:not(.admin-stage) .tabbar { bottom: 30px !important; }
+}
+
+@media (max-width: 390px) {
+  .home-hero { min-height: 0; }
+}
