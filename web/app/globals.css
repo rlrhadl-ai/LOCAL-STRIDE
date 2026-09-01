@@ -1102,3 +1102,77 @@ label.field { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color:
 @media (max-width: 390px) {
   .home-hero { min-height: 0; }
 }
+
+/* 빠른 시작: 중앙 러닝 버튼은 사용자의 다음 행동을 먼저 묻는다. */
+.tab.cta { width: 100%; font-family: inherit; cursor: pointer; }
+.run-sheet-backdrop { position: fixed; inset: 0; z-index: 1190; width: 100%; border: 0; background: rgba(3, 14, 42, .58); backdrop-filter: blur(3px); cursor: default; }
+.run-action-sheet { position: fixed; z-index: 1200; left: 50%; bottom: 0; width: min(100%, var(--shell-w)); padding: 8px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 25px 25px 0 0; background: #fff; box-shadow: 0 -20px 60px rgba(4, 17, 50, .25); transform: translateX(-50%); }
+.run-sheet-handle { width: 38px; height: 4px; margin: 0 auto 14px; border-radius: 99px; background: #D9DFEA; }
+.run-sheet-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.run-sheet-heading > div > span { color: var(--blue); font-size: 10px; font-weight: 950; letter-spacing: .12em; }
+.run-sheet-heading h2 { margin: 5px 0 3px; font-size: 22px; letter-spacing: -.045em; }
+.run-sheet-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.run-sheet-heading > button { flex: 0 0 40px; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: #F5F7FB; color: var(--navy); font: 400 24px/1 Arial, sans-serif; }
+.run-sheet-actions { display: grid; gap: 8px; margin-top: 17px; }
+.run-sheet-actions a { position: relative; display: grid; gap: 3px; min-height: 62px; padding: 12px 44px 12px 14px; border: 1px solid #DCE3EF; border-radius: 15px; background: #F8FAFD; }
+.run-sheet-actions a.primary { border-color: var(--gold); background: var(--gold); color: var(--navy); box-shadow: 0 8px 18px rgba(205, 155, 24, .2); }
+.run-sheet-actions strong { font-size: 13px; }
+.run-sheet-actions small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.run-sheet-actions a.primary small { color: #71540D; }
+.run-sheet-actions a > span { position: absolute; right: 15px; top: 50%; color: var(--blue); font-size: 18px; font-weight: 900; transform: translateY(-50%); }
+.run-sheet-actions a.primary > span { color: var(--navy); }
+
+/* 홈: 지역·거리·달리기 방식 선택을 다음 화면까지 전달한다. */
+.quick-run-card { margin-top: 13px; padding: 18px; border-radius: 22px; background: linear-gradient(145deg, #071945, #123E91 70%, #1C59C7); color: #fff; box-shadow: 0 15px 34px rgba(10, 29, 82, .18); }
+.quick-run-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.quick-run-head > div > span { color: var(--gold); font-size: 10px; font-weight: 950; letter-spacing: .1em; }
+.quick-run-head h2 { margin: 5px 0 0; font-size: 19px; line-height: 1.25; letter-spacing: -.04em; }
+.quick-run-head > b { flex: 0 0 auto; padding: 6px 9px; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: rgba(255,255,255,.1); font-size: 11px; }
+.quick-run-card > p { margin: 7px 0 15px; color: #CFDCF7; font-size: 12px; line-height: 1.55; word-break: keep-all; }
+.quick-run-field { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 8px; }
+.quick-run-field > span { color: #DCE7FF; font-size: 11.5px; font-weight: 800; }
+.quick-run-field > div { display: flex; gap: 6px; }
+.quick-run-field button { flex: 1 1 0; min-height: 38px; padding: 7px 5px; border: 1px solid rgba(255,255,255,.23); border-radius: 10px; background: rgba(255,255,255,.08); color: #E4ECFF; font: inherit; font-size: 11px; font-weight: 800; line-height: 1.2; }
+.quick-run-field button.on { border-color: var(--gold); background: var(--gold); color: var(--navy); box-shadow: 0 5px 13px rgba(205,155,24,.18); }
+.quick-run-submit { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 58px; margin-top: 15px; padding: 10px 13px; border-radius: 13px; background: #fff; color: var(--navy); }
+.quick-run-submit > span { display: grid; gap: 2px; }
+.quick-run-submit b { font-size: 12px; }
+.quick-run-submit small { color: var(--muted); font-size: 10.5px; }
+.quick-run-submit > strong { flex: 0 0 auto; padding: 9px 10px; border-radius: 9px; background: var(--gold); font-size: 11px; }
+
+/* 코스 상세: 출발 전에 필요한 정보만 한 카드에서 확인한다. */
+.course-detail-map { height: 300px; margin: 0; flex: none; }
+.course-overview-card { margin-top: 12px; padding: 16px; border: 1px solid #D4DFF1; border-radius: 20px; background: #fff; box-shadow: 0 10px 26px rgba(10,29,82,.08); }
+.course-overview-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.course-overview-heading > div { display: grid; gap: 3px; min-width: 0; }
+.course-overview-heading > div > span { color: var(--blue); font: 900 9.5px var(--mono); letter-spacing: .1em; }
+.course-overview-heading strong { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.course-overview-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 13px; }
+.course-overview-metrics > span { display: grid; gap: 4px; padding: 11px 8px; border-radius: 12px; background: #F2F5FA; text-align: center; }
+.course-overview-metrics small { color: var(--muted); font-size: 10px; }
+.course-overview-metrics b { color: var(--navy); font: 900 14px var(--mono); }
+.course-overview-card > p { margin: 13px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; word-break: keep-all; }
+.course-overview-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.course-overview-tags span { padding: 5px 8px; border-radius: 999px; background: #EDF3FF; color: var(--blue); font-size: 10.5px; font-weight: 800; }
+.course-safety-note { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 8px; margin-top: 12px; padding: 10px; border-radius: 11px; background: #FFF8DD; color: #5F4910; }
+.course-safety-note b { font-size: 11px; }
+.course-safety-note span { font-size: 11px; line-height: 1.45; }
+.course-start-button { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; min-height: 48px; font-size: 13px; }
+.course-load-error { display: grid; gap: 7px; margin-top: 26px; padding: 22px; border: 1px solid #E0E5EF; border-radius: 18px; background: #fff; text-align: center; }
+.course-load-error > span { color: var(--blue); font-size: 11px; font-weight: 900; }
+.course-load-error > strong { font-size: 17px; }
+.course-load-error > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.course-load-error > div { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+.course-load-error button, .course-load-error a { min-height: 42px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--gold); color: var(--navy); font: inherit; font-size: 12px; font-weight: 850; }
+.course-load-error a { background: var(--navy); color: #fff; }
+
+@media (min-width: 1100px) {
+  .app-stage:not(.admin-stage) .run-action-sheet { left: calc(50% + 320px); bottom: 30px; border-radius: 25px; }
+}
+
+@media (max-width: 380px) {
+  .quick-run-card { padding: 16px 14px; }
+  .quick-run-field { grid-template-columns: 64px minmax(0, 1fr); }
+  .quick-run-field button { font-size: 10px; }
+  .run-action-sheet { padding-right: 14px; padding-left: 14px; }
+}

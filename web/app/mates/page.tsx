@@ -12,6 +12,10 @@ interface RunnerProfile { user: { preferredPaceSec: number | null; homeArea: str
 const isPreview = (post: Post) => post.body.startsWith('[시범 모집]');
 const cleanBody = (value: string) => value.replace(/^\[시범 모집\]\s*/, '');
 const district = (value: string) => daeguAreaFromText(value)?.name || '기타';
+const distanceFromPost = (post: Post) => {
+  const match = cleanBody(post.body).match(/^\[(\d+(?:\.\d+)?)km\b/);
+  return match ? Number(match[1]) : null;
+};
 
 export default function MatesPage() {
   const [type, setType] = useState<'' | 'PACEMAKER' | 'MATE'>('');
@@ -22,6 +26,7 @@ export default function MatesPage() {
   const [timeFilter, setTimeFilter] = useState<'ALL' | '48H' | 'WEEKEND'>('ALL');
   const { areaFilter, setAreaFilter } = useDaeguAreaFilter();
   const [paceOnly, setPaceOnly] = useState(false);
+  const [targetDistance, setTargetDistance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ type: 'MATE' as 'MATE' | 'PACEMAKER', area: '수성구', distanceKm: 5, paceMin: 6, paceMax: 7, meetAt: '', place: '수성못 상화동산 입구', slots: 4, body: '', safety: false });
   const [message, setMessage] = useState('');
@@ -47,6 +52,11 @@ export default function MatesPage() {
     }).catch(() => undefined);
     const params = new URLSearchParams(window.location.search);
     if (params.get('create') === '1') setOpen(true);
+    const requestedDistance = Number(params.get('distance'));
+    if (requestedDistance >= 1 && requestedDistance <= 50) {
+      setTargetDistance(requestedDistance);
+      setForm((current) => ({ ...current, distanceKm: requestedDistance }));
+    }
     const requestedArea = params.get('area');
     if (requestedArea && requestedArea !== 'all') { const selected = daeguAreaByName(requestedArea); setForm((current) => ({ ...current, area: selected.name, place: `${selected.hub} 공개 집결지` })); }
   }, []);
@@ -54,11 +64,14 @@ export default function MatesPage() {
   const scoredItems = useMemo(() => items.map((post) => {
     const paceGap = profile?.preferredPaceSec ? Math.abs(post.paceSec - profile.preferredPaceSec) : null;
     const areaMatch = Boolean(profile && district(profile.homeArea) !== '기타' && district(profile.homeArea) === district(post.place));
-    let score = 50;
-    if (paceGap != null) score += paceGap <= 45 ? 30 : paceGap <= 90 ? 15 : 2;
-    else score += 12;
-    score += areaMatch ? 20 : 7;
-    const reasons = [paceGap == null ? '선호 페이스 설정 후 정밀 비교' : paceGap <= 45 ? `내 페이스와 ${Math.round(paceGap / 6) / 10}분 차이` : '페이스 차이 확인 필요', areaMatch ? `내 활동 지역 ${district(post.place)}` : `${district(post.place)} 집결`];
+    const postDistance = distanceFromPost(post);
+    const distanceGap = targetDistance != null && postDistance != null ? Math.abs(postDistance - targetDistance) : null;
+    let score = 35;
+    if (paceGap != null) score += paceGap <= 45 ? 28 : paceGap <= 90 ? 14 : 2;
+    else score += 10;
+    score += areaMatch ? 18 : 6;
+    score += distanceGap == null ? 8 : distanceGap <= 1 ? 15 : distanceGap <= 3 ? 8 : 1;
+    const reasons = [paceGap == null ? '선호 페이스 설정 후 정밀 비교' : paceGap <= 45 ? `내 페이스와 ${Math.round(paceGap / 6) / 10}분 차이` : '페이스 차이 확인 필요', areaMatch ? `내 활동 지역 ${district(post.place)}` : `${district(post.place)} 집결`, distanceGap == null ? '모집 거리 확인 필요' : `${postDistance}km · 목표와 ${distanceGap}km 차이`];
     return { post, score: Math.min(98, score), paceGap, reasons };
   }).filter(({ post, paceGap }) => {
     const when = new Date(post.meetAt); const hours = (when.getTime() - Date.now()) / 3600000;
@@ -67,7 +80,7 @@ export default function MatesPage() {
     if (areaFilter !== '전체' && district(post.place) !== areaFilter) return false;
     if (paceOnly && (paceGap == null || paceGap > 45)) return false;
     return true;
-  }).sort((a, b) => b.score - a.score || new Date(a.post.meetAt).getTime() - new Date(b.post.meetAt).getTime()), [areaFilter, items, paceOnly, profile, timeFilter]);
+  }).sort((a, b) => b.score - a.score || new Date(a.post.meetAt).getTime() - new Date(b.post.meetAt).getTime()), [areaFilter, items, paceOnly, profile, targetDistance, timeFilter]);
 
   const apply = async (post: Post) => { try { await api.post(`/mates/${post.id}/apply`); setMessage('신청 완료 — 닉네임으로만 공개됩니다.'); await load(); } catch (error: any) { setMessage(error.message); } };
   const create = async () => { try {
@@ -91,7 +104,7 @@ export default function MatesPage() {
         <div className="host-form-actions">{step > 1 && <button className="btn light" type="button" onClick={() => setStep(step - 1)}>이전</button>}<button className="btn" type="button" disabled={!stepValid} onClick={() => step < 3 ? setStep(step + 1) : create()}>{step < 3 ? '다음' : '모집 올리기'}</button></div>
       </section>}
 
-      <section className="mate-match-panel"><div><span>MATCH BASIS</span><strong>{profile?.preferredPaceSec ? `${fmtPace(profile.preferredPaceSec)}/km · ${profile.homeArea}` : '초기 맞춤 순'}</strong><small>{profile?.preferredPaceSec ? '내 프로필의 페이스·활동 지역으로 정렬' : '내 정보에서 선호 페이스를 설정하면 맞춤도가 정확해져요.'}</small></div><Link href="/me">기준 수정</Link></section>
+      <section className="mate-match-panel"><div><span>MATCH BASIS</span><strong>{[targetDistance ? `${targetDistance}km` : '', profile?.preferredPaceSec ? `${fmtPace(profile.preferredPaceSec)}/km` : '', profile?.homeArea || ''].filter(Boolean).join(' · ') || '초기 맞춤 순'}</strong><small>{targetDistance ? '홈에서 고른 거리와 프로필의 페이스·지역을 함께 비교해요.' : profile?.preferredPaceSec ? '내 프로필의 페이스·활동 지역으로 정렬' : '내 정보에서 선호 페이스를 설정하면 맞춤도가 정확해져요.'}</small></div><Link href="/me">기준 수정</Link></section>
       <div className="pills community-filters mate-filters">{([['', '전체'], ['PACEMAKER', '페이스메이커'], ['MATE', '러닝 메이트']] as const).map(([value, label]) => <button key={value} type="button" className={`pill ${type === value ? 'on' : ''}`} onClick={() => setType(value)}>{label}</button>)}</div>
       <div className="mate-filter-grid"><label>일정<select value={timeFilter} onChange={(event) => setTimeFilter(event.target.value as typeof timeFilter)}><option value="ALL">전체</option><option value="48H">48시간 이내</option><option value="WEEKEND">주말</option></select></label><label>지역<select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option>전체</option>{DAEGU_AREAS.map((area) => <option key={area.slug}>{area.name}</option>)}</select></label><label className="mate-check"><input type="checkbox" checked={paceOnly} onChange={(event) => setPaceOnly(event.target.checked)} />내 페이스 ±45초</label></div>
 
@@ -100,7 +113,7 @@ export default function MatesPage() {
       <div className="mate-list">{scoredItems.map(({ post, score, reasons }) => {
         const remaining = Math.max(0, post.slots - post._count.applications);
         return <article key={post.id} className="mate-card">
-          <div className="mate-card-top"><div className="mate-author"><span className="mate-avatar" style={{ background: post.author.avatarColor }}>{post.author.nickname.slice(0, 1)}</span><span><b>{post.author.nickname}</b><small>{new Date(post.meetAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</small></span></div><span className="mate-match-score">{profile?.preferredPaceSec ? `${score}% 맞춤` : '초기 추천'}</span></div>
+          <div className="mate-card-top"><div className="mate-author"><span className="mate-avatar" style={{ background: post.author.avatarColor }}>{post.author.nickname.slice(0, 1)}</span><span><b>{post.author.nickname}</b><small>{new Date(post.meetAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</small></span></div><span className="mate-match-score">{profile?.preferredPaceSec || targetDistance ? `${score}% 맞춤` : '초기 추천'}</span></div>
           <div className="mate-tags"><span className={`tag ${post.type === 'PACEMAKER' ? 'gold' : ''}`}>{post.type === 'PACEMAKER' ? '페이스메이커' : '러닝 메이트'}</span>{isPreview(post) && <span className="tag">시범 모집</span>}</div>
           <h3>{cleanBody(post.body) || `${post.place}에서 같이 달려요.`}</h3><div className="mate-match-reasons">{reasons.map((reason) => <span key={reason}>{reason}</span>)}</div>
           <div className="mate-route"><span><small>집결</small><b>{post.place}</b></span><span><small>페이스</small><b>{fmtPace(post.paceSec)}/km</b></span></div>

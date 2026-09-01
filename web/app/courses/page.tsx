@@ -20,6 +20,14 @@ export default function CoursesPage() {
   const selectedAreaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedKm = Number(params.get('km'));
+    const requestedTheme = params.get('theme');
+    if (KMS.includes(requestedKm)) setKm(requestedKm);
+    if (requestedTheme && THEMES.includes(requestedTheme)) setTheme(requestedTheme);
+  }, []);
+
+  useEffect(() => {
     let alive = true; setLoading(true);
     Promise.all([
       api.get<{ items: Course[] }>(`/courses?theme=${encodeURIComponent(theme)}`),
@@ -44,8 +52,8 @@ export default function CoursesPage() {
 
     <section className="course-controls" aria-label="추천 조건">
       <div><span>지역</span><div className="course-area-options" aria-label="코스 지역 선택"><button ref={area === '전체' ? selectedAreaRef : undefined} type="button" className={area === '전체' ? 'on' : ''} aria-pressed={area === '전체'} onClick={() => setArea('전체')}>대구 전체</button>{DAEGU_AREAS.map((value) => <button ref={area === value.name ? selectedAreaRef : undefined} type="button" className={area === value.name ? 'on' : ''} aria-pressed={area === value.name} onClick={() => setArea(value.name)} key={value.slug}>{value.name}</button>)}</div></div>
-      <div><span>거리</span><div>{KMS.map((value) => <button type="button" className={km === value ? 'on' : ''} onClick={() => setKm(value)} key={value}>{value}km</button>)}</div></div>
-      <div><span>분위기</span><div>{THEMES.map((value) => <button type="button" className={theme === value ? 'on' : ''} onClick={() => setTheme(value)} key={value}>{value}</button>)}</div></div>
+      <div><span>거리</span><div>{KMS.map((value) => <button type="button" className={km === value ? 'on' : ''} aria-pressed={km === value} onClick={() => setKm(value)} key={value}>{value}km</button>)}</div></div>
+      <div><span>분위기</span><div>{THEMES.map((value) => <button type="button" className={theme === value ? 'on' : ''} aria-pressed={theme === value} onClick={() => setTheme(value)} key={value}>{value}</button>)}</div></div>
     </section>
 
     {visibleBestCourse && <Link href={`/courses/${visibleBestCourse.slug}`} className={`course-pick ${loading ? 'loading' : ''}`}>

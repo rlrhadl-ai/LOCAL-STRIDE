@@ -12,6 +12,7 @@ import type { Course, HomeBanner, NearbyResult, PartnerOffer, Recommendation, Ru
 const PROGRAM_KIND: Record<RunProgram['kind'], string> = {
   MORNING: '아침런', AFTER_WORK: '퇴근런', INDEPENDENT: '독립런', THEME: '주제형 러닝', POPUP: '번개런',
 };
+const COURSE_THEMES = ['수변', '야경', '미식', '역사', '골목'];
 
 function PartnerGlyph() {
   return <svg viewBox="0 0 48 48" fill="none" aria-hidden><path d="M11 32c5-2 7-6 8-13 4 6 8 9 18 10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><path d="M12 35h25" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"/><circle cx="31" cy="16" r="4" fill="currentColor"/></svg>;
@@ -26,6 +27,8 @@ export default function Home() {
   const [programs, setPrograms] = useState<RunProgram[]>([]);
   const [locationState, setLocationState] = useState<'idle' | 'loading'>('idle');
   const [locationMessage, setLocationMessage] = useState('');
+  const [quickDistance, setQuickDistance] = useState(5);
+  const [quickMode, setQuickMode] = useState<'solo' | 'together'>('solo');
   const selectedAreaRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -58,6 +61,10 @@ export default function Home() {
   const featuredPartner = partners.find((partner) => partner.name === '러너스데이') ?? partners.find((partner) => partner.name.includes('러너스테이')) ?? partners[0];
   const weather = rec?.weather;
   const runHref = area.runCourseSlug ? `/run/${area.runCourseSlug}` : `/spots?area=${area.slug}`;
+  const quickTheme = area.themes.find((theme) => COURSE_THEMES.includes(theme)) || '수변';
+  const quickHref = quickMode === 'solo'
+    ? `/courses?area=${area.slug}&km=${quickDistance}&theme=${encodeURIComponent(quickTheme)}`
+    : `/mates?area=${area.slug}&distance=${quickDistance}`;
 
   const findMyArea = async () => {
     setLocationState('loading'); setLocationMessage('현재 위치를 확인하고 있어요.');
@@ -83,6 +90,14 @@ export default function Home() {
     </section>
 
     <section className="home-region-section"><div className="home-region-head"><div><span>9 DISTRICTS & COUNTIES</span><h2>{area.hub}에서 달리기</h2><p>{area.summary}</p></div><div className="home-region-tools"><Link href="/regions">지역 전체보기</Link><button type="button" onClick={findMyArea} disabled={locationState === 'loading'}>{locationState === 'loading' ? '위치 확인 중' : '내 위치로 찾기'}</button></div></div>{locationMessage && <p className="home-location-message" role="status">{locationMessage}</p>}<div className="home-region-scroll" aria-label="대구 지역 선택">{DAEGU_AREAS.map((option) => <button ref={option.slug === area.slug ? selectedAreaRef : undefined} type="button" className={option.slug === area.slug ? 'on' : ''} aria-pressed={option.slug === area.slug} onClick={() => { setAreaSlug(option.slug); setLocationMessage(''); }} key={option.slug}><b>{option.name}</b><small>{option.hub}</small></button>)}</div><div className="home-region-actions"><Link href={`/spots?area=${area.slug}`}>주변 관광지</Link><Link href={`/mates?area=${area.slug}`}>{area.name} 러너</Link></div></section>
+
+    <section className="quick-run-card" aria-labelledby="quick-run-title">
+      <div className="quick-run-head"><div><span>30초 러닝 추천</span><h2 id="quick-run-title">오늘 달릴 방법만 골라보세요.</h2></div><b>{area.name}</b></div>
+      <p>{area.hub}을 기준으로 선택한 조건을 다음 화면까지 그대로 이어드려요.</p>
+      <div className="quick-run-field"><span>거리</span><div>{[3, 5, 7, 10].map((distance) => <button type="button" className={quickDistance === distance ? 'on' : ''} aria-pressed={quickDistance === distance} onClick={() => setQuickDistance(distance)} key={distance}>{distance}km</button>)}</div></div>
+      <div className="quick-run-field"><span>달리기 방식</span><div><button type="button" className={quickMode === 'solo' ? 'on' : ''} aria-pressed={quickMode === 'solo'} onClick={() => setQuickMode('solo')}>혼자 코스 찾기</button><button type="button" className={quickMode === 'together' ? 'on' : ''} aria-pressed={quickMode === 'together'} onClick={() => setQuickMode('together')}>함께 달리기</button></div></div>
+      <Link href={quickHref} className="quick-run-submit"><span><b>{quickDistance}km · {quickMode === 'solo' ? quickTheme : `${area.name} 러너`}</b><small>{quickMode === 'solo' ? '내 조건에 맞는 코스 보기' : '거리와 지역이 맞는 메이트 보기'}</small></span><strong>추천 보기 →</strong></Link>
+    </section>
 
     {nextProgram && <section className="home-section home-program-section">
       <div className="home-section-head"><div><span>{area.name} 이번 주 러닝</span><h2>같이 달릴 준비됐나요?</h2></div><Link href={`/programs?area=${area.slug}`}>{area.name} 일정</Link></div>
