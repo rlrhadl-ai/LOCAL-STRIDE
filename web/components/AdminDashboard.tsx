@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { adminJson, adminRequest, uploadAdminImage } from '@/lib/admin-api';
 import { mediaUrl } from '@/lib/api';
+import AdminHazards from './AdminHazards';
 
-type Panel = 'dashboard' | 'programs' | 'banners' | 'courses' | 'pois' | 'partners' | 'users';
+type Panel = 'dashboard' | 'programs' | 'banners' | 'courses' | 'pois' | 'partners' | 'users' | 'hazards';
 type Row = Record<string, any>;
 type ProgramOptions = { hosts: Row[]; courses: Row[] };
 
 const NAV: { id: Panel; label: string }[] = [
+  { id: 'hazards', label: '코스 안전 신고' },
   { id: 'dashboard', label: '대시보드' }, { id: 'programs', label: '러닝 프로그램' }, { id: 'banners', label: '광고 배너' }, { id: 'courses', label: '코스' },
   { id: 'pois', label: '관광지' }, { id: 'partners', label: '혜택·파트너' }, { id: 'users', label: '회원' },
 ];
-const TITLES: Record<Panel, string> = { dashboard: '운영 현황', programs: '대구 러닝 프로그램', banners: '홈 광고 배너', courses: '러닝 코스', pois: '관광지 콘텐츠', partners: '로컬 혜택·파트너', users: '회원 관리' };
+const TITLES: Record<Panel, string> = { hazards: '코스 안전 신고', dashboard: '운영 현황', programs: '대구 러닝 프로그램', banners: '홈 광고 배너', courses: '러닝 코스', pois: '관광지 콘텐츠', partners: '로컬 혜택·파트너', users: '회원 관리' };
 const ENDPOINT: Partial<Record<Panel, string>> = { programs: '/programs', banners: '/banners', courses: '/courses', pois: '/pois', partners: '/partners', users: '/users' };
 const CREATE_ALLOWED: Panel[] = ['programs', 'banners', 'pois', 'partners'];
 
@@ -67,6 +69,7 @@ export default function AdminDashboard() {
   }, [router]);
 
   async function load(target: Panel = panel) {
+    if (target === 'hazards') { setLoading(false); setError(''); return; }
     setLoading(true); setError('');
     try {
       if (target === 'dashboard') setStats(await adminRequest('/dashboard'));
@@ -141,7 +144,7 @@ export default function AdminDashboard() {
         {message && <div className="admin-notice">{message}</div>}{error && <div className="admin-error-box" role="alert">{error}</div>}
         {editing && <form className="admin-editor" onSubmit={save}><div className="admin-editor-head"><h2>{editing.id ? '항목 편집' : '새 항목 만들기'}</h2><button type="button" onClick={() => setEditing(null)}>닫기 ×</button></div><div className="admin-form-grid">{renderForm(panel, editing, change, setError, programOptions)}</div><div className="admin-editor-actions"><button type="button" className="btn light sm" onClick={() => setEditing(null)}>취소</button><button className="btn sm" disabled={saving}>{saving ? '저장 중…' : '저장'}</button></div></form>}
         {participantProgram && <ParticipantManager program={participantProgram} rows={participants} loading={participantLoading} onStatus={updateParticipant} onClose={() => setParticipantProgram(null)} />}
-        {panel === 'dashboard' ? <Dashboard stats={stats} loading={loading} /> : <DataList panel={panel} rows={rows} loading={loading} onEdit={startEdit} onDelete={remove} onParticipants={manageParticipants} />}
+        {panel === 'hazards' ? <AdminHazards /> : panel === 'dashboard' ? <Dashboard stats={stats} loading={loading} /> : <DataList panel={panel} rows={rows} loading={loading} onEdit={startEdit} onDelete={remove} onParticipants={manageParticipants} />}
       </section>
     </div>
   </main>;

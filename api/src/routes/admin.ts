@@ -109,9 +109,9 @@ const courseUpdate = z.object({
 admin.patch('/admin/courses/:id', wrap(async (req, res) => res.json(await prisma.course.update({ where: { id: String(req.params.id) }, data: courseUpdate.parse(req.body) }))));
 admin.delete('/admin/courses/:id', wrap(async (req, res) => {
   const id = String(req.params.id);
-  const course = await prisma.course.findUnique({ where: { id }, select: { _count: { select: { runs: true, events: true, crewRuns: true } } } });
+  const course = await prisma.course.findUnique({ where: { id }, select: { _count: { select: { runs: true, events: true, crewRuns: true, hazardReports: true } } } });
   if (!course) throw new HttpError(404, '코스를 찾을 수 없습니다');
-  if (course._count.runs || course._count.events || course._count.crewRuns) throw new HttpError(409, '기록 또는 일정이 연결된 코스는 삭제 대신 비공개로 전환해 주세요');
+  if (course._count.runs || course._count.events || course._count.crewRuns || course._count.hazardReports) throw new HttpError(409, '기록·일정·안전 신고가 연결된 코스는 삭제 대신 비공개로 전환해 주세요');
   await prisma.course.delete({ where: { id } });
   res.status(204).end();
 }));

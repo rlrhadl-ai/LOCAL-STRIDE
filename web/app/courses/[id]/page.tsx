@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import LiveBadge from '@/components/LiveBadge';
 import { api } from '@/lib/api';
+import { useHazards } from '@/lib/hazards';
+import CourseHazards from '@/components/CourseHazards';
 import type { Course, NearbyResult } from '@/lib/types';
 
 const RunMap = dynamic(() => import('@/components/RunMap'), { ssr: false });
@@ -15,6 +17,7 @@ export default function CourseDetail() {
   const [c, setC] = useState<Course | null>(null);
   const [nearby, setNearby] = useState<NearbyResult | null>(null);
   const [err, setErr] = useState('');
+  const hazardFeed = useHazards(c?.id);
   useEffect(() => { api.get<Course>(`/courses/${id}`).then(setC).catch((e) => setErr(e.message)); }, [id]);
   useEffect(() => {
     if (!c) return;
@@ -31,7 +34,7 @@ export default function CourseDetail() {
     <main className="page course-detail-page">
       <AppHeader back title={c.name} />
       <div className="map-wrap course-detail-map">
-        <RunMap route={c.polyline} done={[]} checkpoints={cps} cpState={() => ''} runner={null} pois={(c.pois ?? []).map((p) => p.poi)} />
+        <RunMap route={c.polyline} done={[]} checkpoints={cps} cpState={() => ''} runner={null} pois={(c.pois ?? []).map((p) => p.poi)} hazards={hazardFeed.items} />
       </div>
       <section className="course-overview-card" aria-label="코스 핵심 정보">
         <div className="course-overview-heading"><div><span>START</span><strong>{startName}</strong></div><span className="tag">{c.difficulty}</span></div>
@@ -41,6 +44,7 @@ export default function CourseDetail() {
         <div className="course-safety-note"><b>안전 확인</b><span>체크포인트 {cps.length}곳 · 보행·통행 상태는 출발 전 현장에서 한 번 더 확인해 주세요.</span></div>
         <Link className="btn gold course-start-button" href={`/run/${c.slug}`}>이 코스로 러닝 시작 <span aria-hidden>→</span></Link>
       </section>
+      <CourseHazards course={c} feed={hazardFeed} />
       <div className="section-title"><h2>체크포인트 {cps.length}곳</h2><span>{cps.length ? `${cps[0].radiusM}m 반경 자동 체크인` : ''}</span></div>
       <div className="stack">{cps.map((cp, i) => <div className="mission" key={cp.id}><span className="n">{i === cps.length - 1 && i > 0 ? 'F' : i === 0 ? 'S' : i}</span><div><h4>{cp.name}</h4><p>{cp.kind} · {(cp.distM / 1000).toFixed(1)}km{cp.dataSource ? ` · ${cp.dataSource}` : ''}</p></div>{cp.reward && <span className="tag gold">리워드</span>}</div>)}</div>
       <div className="section-title data-section-title"><div><h2>출발점 주변 관광정보</h2>{nearby && <LiveBadge source={nearby.source} ms={nearby.fetchedMs} label={nearby.cached ? 'TourAPI 캐시' : 'TourAPI'}/>}</div><span>한국관광공사 locationBasedList2 · 반경 1.5km</span></div>

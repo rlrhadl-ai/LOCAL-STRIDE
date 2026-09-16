@@ -3,6 +3,9 @@ import { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Checkpoint, LatLng, Poi } from '@/lib/types';
+import type { Hazard } from '@/lib/hazards';
+import HazardMarkers from './HazardMarkers';
+import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION } from '@/lib/map-tiles';
 
 const cpIcon = (label: string, state: string, finish: boolean) => L.divIcon({ className: 'cp', html: `<span class="cp-dot ${state} ${finish ? 'finish' : ''}">${label}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] });
 const runnerIcon = L.divIcon({ className: 'runner', html: '<span class="runner-dot"></span>', iconSize: [22, 22], iconAnchor: [11, 11] });
@@ -19,12 +22,12 @@ function Follow({ pos, on }: { pos: LatLng | null; on: boolean }) {
   return null;
 }
 
-export default function RunMap({ route, done, checkpoints, cpState, runner, pois, follow = false, height }: { route: LatLng[]; done: LatLng[]; checkpoints: Checkpoint[]; cpState: (i: number) => string; runner: LatLng | null; pois: Poi[]; follow?: boolean; height?: number }) {
+export default function RunMap({ route, done, checkpoints, cpState, runner, pois, follow = false, height, hazards = [] }: { route: LatLng[]; done: LatLng[]; checkpoints: Checkpoint[]; cpState: (i: number) => string; runner: LatLng | null; pois: Poi[]; follow?: boolean; height?: number; hazards?: Hazard[] }) {
   const center = route[0] ?? [35.8277, 128.6177];
   const last = checkpoints.length - 1;
   return (
     <MapContainer center={center} zoom={15} zoomSnap={0.1} zoomControl={false} dragging={false} scrollWheelZoom={false} doubleClickZoom={false} touchZoom={false} attributionControl style={{ height: height ?? '100%', width: '100%' }}>
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" attribution="© OpenStreetMap © CARTO" subdomains="abcd" maxZoom={19} />
+      <TileLayer url={MAP_TILE_URL} attribution={MAP_TILE_ATTRIBUTION} maxZoom={19} />
       <Fit route={route} />
       <Follow pos={runner} on={follow} />
       <Polyline positions={route} pathOptions={{ color: '#B9C5E6', weight: 6, lineCap: 'round', lineJoin: 'round' }} />
@@ -32,6 +35,7 @@ export default function RunMap({ route, done, checkpoints, cpState, runner, pois
       {checkpoints.map((c, i) => (i === 0 && last > 0 ? null : <Marker key={c.id} position={[c.lat, c.lng]} icon={cpIcon(i === last ? (last > 0 ? 'S/F' : 'S') : String(i), cpState(i), i === last)} interactive={false} zIndexOffset={i === last ? 500 : 0} />))}
       {pois.map((p, i) => <Marker key={p.contentId ?? `${p.title}-${i}`} position={[p.lat, p.lng]} icon={poiIcon(p.contentTypeId)} interactive={false} />)}
       {runner && <Marker position={runner} icon={runnerIcon} interactive={false} zIndexOffset={1000} />}
+      <HazardMarkers items={hazards} />
     </MapContainer>
   );
 }

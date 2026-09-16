@@ -28,6 +28,8 @@ docs/  아키텍처 · 데이터 모델 · API · 공공데이터 · 로드맵 �
 
 ## 관리자 콘솔
 
+코스 파손·불편 사진/GPS 신고와 관리자 처리 기능은 [코스 안전 신고 안내](docs/course-hazard-reports.md)를 참고한다. 신규 DB 마이그레이션 적용 후 API와 웹을 순서대로 배포해야 한다.
+
 `/admin/signup`에서 허용된 이메일과 서버의 `ADMIN_SETUP_CODE`로 최초 관리자 계정을 만든다. 가입 후에는 `/admin/login`에서 이메일·비밀번호로 로그인한다. 운영 서버에는 `ADMIN_EMAILS`, `ADMIN_SETUP_CODE`, 영구 이미지 경로인 `UPLOAD_DIR`을 설정해야 한다. 비밀번호 원문과 세션 토큰은 데이터베이스에 저장하지 않는다.
 
 ## 빠른 시작 (로컬)

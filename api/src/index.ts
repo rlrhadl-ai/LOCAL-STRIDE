@@ -23,6 +23,7 @@ import { me } from './routes/me';
 import { ai } from './routes/ai';
 import { partners } from './routes/partners';
 import { admin } from './routes/admin';
+import { hazards } from './routes/hazards';
 import { content } from './routes/content';
 import { auth } from './routes/auth';
 import { uploadDir } from './lib/uploads';
@@ -42,7 +43,7 @@ app.use(deviceAuth);
 app.use(sessionAuth);
 
 app.get('/', (_req, res) => res.json({ name: 'LOCAL STRIDE API', docs: '/api/health' }));
-app.use('/api', health, auth, tour, weather, courses, recommend, runs, missions, crews, events, programs, mates, rankings, me, ai, partners, content, admin);
+app.use('/api', health, auth, tour, weather, courses, recommend, runs, missions, crews, events, programs, mates, rankings, me, ai, partners, content, hazards, admin);
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 app.use(errorHandler);
 

@@ -6,6 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import AgentLog from '@/components/AgentLog';
 import LiveBadge from '@/components/LiveBadge';
 import { api } from '@/lib/api';
+import { useHazards } from '@/lib/hazards';
+import CourseHazards from '@/components/CourseHazards';
 import { setVoice, speak, voiceOn } from '@/lib/speech';
 import { useRunEngine } from '@/lib/useRunEngine';
 import { fmtKm, fmtPace, fmtTime, type Course } from '@/lib/types';
@@ -21,6 +23,7 @@ export default function RunPage() {
   const [asking, setAsking] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const { s, start, togglePause, finish, reconnectGps, closePush, log } = useRunEngine(course, 'LIVE', 1);
+  const hazardFeed = useHazards(course?.id);
 
   const requestFinish = useCallback(() => {
     const pending = s.pendingPoints + s.pendingCheckins;
@@ -32,7 +35,7 @@ export default function RunPage() {
   useEffect(() => { if (s.status === 'finished' && s.runId) router.push(`/finish/${s.runId}`); }, [s.status, s.runId, router]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest('input, textarea')) return;
+      if ((e.target as HTMLElement)?.closest('input, textarea, select, button, [contenteditable]')) return;
       if (e.key === ' ') { e.preventDefault(); ['idle', 'error'].includes(s.status) ? begin() : togglePause(); }
       else if (e.key === 'f' || e.key === 'F') requestFinish();
       else if (e.key === 'm' || e.key === 'M') toggleVoice();
@@ -70,7 +73,7 @@ export default function RunPage() {
         <div><b>{pace}</b><span>페이스</span></div>
       </div>
       <div className="map-wrap">
-        <RunMap route={course.polyline} done={s.done} checkpoints={cps} cpState={cpState} runner={s.runner ?? course.polyline[0]} pois={s.pois} follow />
+        <RunMap route={course.polyline} done={s.done} checkpoints={cps} cpState={cpState} runner={s.runner ?? course.polyline[0]} pois={s.pois} hazards={hazardFeed.items} follow />
         <div className="map-chip">
           <span className="live-badge"><i />실제 GPS{s.gpsAccuracyM != null ? ` ±${s.gpsAccuracyM}m` : ''}</span>
           {s.wakeLockActive && <span className="live-badge"><i />화면 유지</span>}
@@ -113,6 +116,7 @@ export default function RunPage() {
           )}
         </div>
       </div>
+      <CourseHazards course={course} feed={hazardFeed} onReportStart={() => { if (s.status === 'running') togglePause(); }} />
       <AgentLog entries={s.log}>
         {running && <div className="ask-row"><input value={question} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask()} placeholder="관광 가이드에게 물어보기 — 이 근처 뭐 있어?" /><button type="button" disabled={asking} onClick={ask}>{asking ? '…' : '질문'}</button></div>}
       </AgentLog>

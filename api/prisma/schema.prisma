@@ -131,6 +131,8 @@ model User {
   hostedEvents       Event[]             @relation("HostedEvents")
   courses            Course[]
   adminSessions      AdminSession[]
+  hazardReports      HazardReport[] @relation("ReportAuthor")
+  hazardReviews      HazardReportHistory[]
 }
 
 model AdminSession {
@@ -171,6 +173,68 @@ model Course {
   runs           Run[]
   events         Event[]
   crewRuns       CrewRun[]
+  hazardReports  HazardReport[]
+}
+
+enum HazardCategory {
+  SURFACE
+  FACILITY
+  OBSTRUCTION
+  LIGHTING
+  OTHER
+}
+
+enum HazardSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum HazardStatus {
+  RECEIVED
+  CONFIRMED
+  IN_PROGRESS
+  RESOLVED
+  HIDDEN
+}
+
+model HazardReport {
+  id             String @id @default(cuid())
+  requestId      String @unique
+  courseId       String
+  course         Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  authorId       String
+  author         User @relation("ReportAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  category       HazardCategory
+  severity       HazardSeverity @default(MEDIUM)
+  status         HazardStatus @default(RECEIVED)
+  description    String
+  lat            Float
+  lng            Float
+  accuracyM      Float?
+  locationSource String
+  photo          Bytes
+  version        Int @default(1)
+  publicNote     String @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  history        HazardReportHistory[]
+
+  @@index([courseId, status, createdAt])
+  @@index([status, category, createdAt])
+}
+
+model HazardReportHistory {
+  id        String @id @default(cuid())
+  reportId  String
+  report    HazardReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  status    HazardStatus
+  note      String
+  createdAt DateTime @default(now())
+
+  @@index([reportId, createdAt])
 }
 
 // ---------- 홈 운영 콘텐츠 ----------
