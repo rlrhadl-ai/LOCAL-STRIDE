@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import BannerCarousel from '@/components/BannerCarousel';
+import MateBanner from '@/components/MateBanner';
 import { useDaeguArea } from '@/components/DaeguAreaProvider';
 import LiveBadge from '@/components/LiveBadge';
 import { api, mediaUrl } from '@/lib/api';
@@ -78,6 +79,7 @@ export default function Home() {
   return <main className="page home-page">
     <AppHeader right={<Link href="/me" className="icon-btn" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></Link>} />
 
+    <MateBanner />
     <section className="home-hero">
       <div className="home-hero-meta"><span>DAEGU BORN · RUN TOGETHER</span><b>{weather ? `${weather.temp}° · ${weather.sky}` : '대구 러너 에디션'} · {area.name}</b></div>
       <h1>대구의 길을<br/><em>대구 사람과 달려요.</em></h1>

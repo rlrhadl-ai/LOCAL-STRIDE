@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
 import './hazards.css';
+import './ai-mate.css';
 import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
