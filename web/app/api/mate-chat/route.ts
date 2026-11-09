@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { z } from 'zod';
-import { analyzeMateRuns, buildMatePlan, mateById, mateReply, type MateProfile, type MateRun } from '@/lib/ai-mate';
+import { MATES, analyzeMateRuns, buildMatePlan, mateById, mateReply, type MateProfile, type MateRun } from '@/lib/ai-mate';
 import { DAEGU_AREAS } from '@/lib/daegu-areas';
 import type { Course, Weather } from '@/lib/types';
 
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 const bodySchema = z.object({
   question: z.string().trim().min(1).max(300),
-  preferences: z.object({ mateId: z.enum(['bori', 'daram']), goal: z.enum(['habit', '5k', '10k']), minutes: z.union([z.literal(20), z.literal(30), z.literal(45), z.literal(60)]), feeling: z.enum(['good', 'normal', 'tired']), theme: z.enum(['', '수변', '야경', '자연', '역사', '미식', '골목']) }),
+  preferences: z.object({ mateId: z.enum(MATES.map((mate) => mate.id)), goal: z.enum(['habit', '5k', '10k']), minutes: z.union([z.literal(20), z.literal(30), z.literal(45), z.literal(60)]), feeling: z.enum(['good', 'normal', 'tired']), theme: z.enum(['', '수변', '야경', '자연', '역사', '미식', '골목']) }),
   area: z.string().max(30),
   feedback: z.record(z.string().max(100), z.object({ effort: z.enum(['easy', 'right', 'hard']), liked: z.boolean().nullable() })).refine((value) => Object.keys(value).length <= 30).default({}),
   history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(600) })).max(4).default([]),

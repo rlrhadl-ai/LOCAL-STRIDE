@@ -2,8 +2,9 @@ import { daeguAreaFromCourse } from './daegu-areas';
 import type { Course, Weather } from './types';
 
 export const MATES = [
-  { id: 'bori', name: '재주곰', role: '차분한 페이스 코치', animal: '갈색 곰', color: '#805034', tint: '#F6EEE6', greeting: '우리에게 맞는 속도를 찾아봐요.', personality: '차분하고 간결하게 수치와 근거를 설명합니다. 기록의 한계를 인정하며 존댓말로 말합니다.', rate: .94, pitch: .95 },
-  { id: 'daram', name: '달람쥐', role: '발랄한 동네 탐험가', animal: '다람쥐', color: '#AD5B25', tint: '#FFF2DE', greeting: '오늘도 한 걸음, 같이 가요!', personality: '호기심 많고 다정하게 작은 실천을 응원하는 동네 탐험가입니다. 제공된 코스와 장소를 근거로 경쟁이나 기록 압박 없이 밝은 존댓말로 말합니다.', rate: 1.04, pitch: 1.12 },
+  { id: 'bori', name: '재주곰', role: '차분한 페이스 코치', animal: '갈색 곰', color: '#805034', tint: '#F6EEE6', greeting: '우리에게 맞는 속도를 찾아봐요.', replyOpening: '기록을 함께 살펴볼게요. ', personality: '차분하고 간결하게 수치와 근거를 설명합니다. 기록의 한계를 인정하며 존댓말로 말합니다.', rate: .94, pitch: .95 },
+  { id: 'daram', name: '달람쥐', role: '발랄한 동네 탐험가', animal: '다람쥐', color: '#AD5B25', tint: '#FFF2DE', greeting: '오늘도 한 걸음, 같이 가요!', replyOpening: '우리에게 맞는 길을 찾아봐요! ', personality: '호기심 많고 다정하게 작은 실천을 응원하는 동네 탐험가입니다. 제공된 코스와 장소를 근거로 경쟁이나 기록 압박 없이 밝은 존댓말로 말합니다.', rate: 1.04, pitch: 1.12 },
+  { id: 'kkubugi', name: '꾸북이', role: '느긋한 습관 코치', animal: '거북이', color: '#507240', tint: '#EAF3E6', greeting: '천천히 가도 괜찮아요. 우리 오래 함께 달려요.', replyOpening: '서두르지 말고, 한 걸음씩 살펴봐요. ', personality: '느긋하고 다정한 거북이 친구입니다. 속도 경쟁보다 꾸준한 습관과 편안한 호흡을 응원합니다. 쉬는 날도 존중하고 작은 실천을 제안하며, 기록의 한계를 인정하고 부드러운 존댓말로 말합니다.', rate: .9, pitch: 1 },
 ] as const;
 export type MateId = typeof MATES[number]['id'];
 export type MateGoal = 'habit' | '5k' | '10k';
@@ -124,6 +125,5 @@ export function mateReply(question: string, mateId: MateId, analysis: MateAnalys
   else if (/코스|어디|장소|추천|오늘|달릴/.test(q)) answer = `${plan.message}${plan.routes[0] ? ` ${plan.routes[0].reasons.slice(0, 2).join(' ')}${plan.paceRange ? ` 페이스는 ${plan.paceRange}를 참고하되 편한 호흡을 우선해요.` : ''}` : ''}`;
   else if (/응원|힘내|인사|안녕/.test(q)) answer = analysis.count ? `${analysis.count}번의 완주가 차곡차곡 쌓였어요. 오늘도 나에게 맞는 한 걸음이면 충분해요!` : '처음부터 잘 달릴 필요는 없어요. 편한 신발을 신고, 나에게 맞는 첫 코스부터 같이 찾아봐요!';
   else answer = '지금은 기록 기반 안내로 도와드리고 있어요. “내 페이스 분석”, “오늘 코스 추천”, “주간 리포트”를 물어보면 확인된 정보로 답해드릴게요.';
-  const opening = mate.id === 'bori' ? '기록을 함께 살펴볼게요. ' : '우리에게 맞는 길을 찾아봐요! ';
-  return opening + answer;
+  return mate.replyOpening + answer;
 }

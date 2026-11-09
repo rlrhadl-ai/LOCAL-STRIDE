@@ -11,13 +11,13 @@
 .mate-section-head > span { font-size: 11px; color: #7C7A74; white-space: nowrap; }
 .mate-section-head .mate-eyebrow { margin-bottom: 6px; }
 .mate-selector .mate-section-head { margin-top: 5px; }
-.mate-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.mate-option { position: relative; display: flex; flex-direction: column; align-items: center; padding: 8px 8px 14px; border: 1.5px solid #E8E3DB; border-radius: 21px; color: var(--navy); background: #FFF; transition: background .2s, border-color .2s, box-shadow .2s; }
+.mate-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mate-option { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 8px 5px 12px; border: 1.5px solid #E8E3DB; border-radius: 18px; color: var(--navy); background: #FFF; transition: background .2s, border-color .2s, box-shadow .2s; }
 .mate-option.selected { border-color: var(--mate-color); background: var(--mate-tint); box-shadow: 0 5px 0 -1px color-mix(in srgb, var(--mate-color) 12%, transparent); }
 .mate-option > .running-mate-avatar { width: 148px; max-width: 100%; }
 .mate-option strong { margin-top: 0; font-size: 17px; }
-.mate-option small { margin-top: 4px; font-size: 11px; color: #70665B; }
-.mate-option-check { position: absolute; top: 11px; right: 11px; display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid #DCD5CA; border-radius: 50%; background: white; color: #A39A8D; font-size: 14px; z-index: 1; }
+.mate-option small { min-height: 2.8em; margin-top: 4px; font-size: 10px; line-height: 1.4; color: #70665B; word-break: keep-all; text-wrap: balance; }
+.mate-option-check { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 20px; height: 20px; border: 1px solid #DCD5CA; border-radius: 50%; background: white; color: #A39A8D; font-size: 12px; z-index: 1; }
 .mate-option.selected .mate-option-check { border-color: var(--mate-color); background: var(--mate-color); color: #FFF; }
 .mate-storage-note { margin: 12px 0 0; font-size: 11px; color: #79746D; line-height: 1.6; }
 .running-mate-avatar { display: block; position: relative; width: 180px; aspect-ratio: 1; overflow: hidden; flex-shrink: 0; transform-origin: 50% 90%; }
@@ -154,15 +154,15 @@
 .running-mate-footer { margin-top: 28px; text-align: center; }
 .running-mate-footer span { font-size: 10px; font-weight: 900; letter-spacing: .18em; color: #B0A38F; }
 .running-mate-footer p { margin: 7px 0 0; font-size: 10.5px; color: #A49A89; }
-.mate-entry { position: relative; display: flex; justify-content: space-between; min-height: 155px; padding: 20px 16px; margin: 15px 0; border: 1px solid #EBDEC8; border-radius: 21px; background: #FAF0DF; overflow: hidden; }
-.mate-entry > div:first-child { position: relative; z-index: 2; max-width: 65%; }
+.mate-entry { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 46%; align-items: center; gap: 4px; min-height: 155px; padding: 20px 16px; margin: 15px 0; border: 1px solid #EBDEC8; border-radius: 21px; background: #FAF0DF; overflow: hidden; }
+.mate-entry > div:first-child { position: relative; z-index: 2; min-width: 0; }
 .mate-entry > div > span { font-size: 9px; font-weight: 850; letter-spacing: .04em; color: #A17A44; }
 .mate-entry strong { display: block; margin-top: 8px; font-size: 19px; color: var(--navy); letter-spacing: -.04em; }
 .mate-entry p { max-width: 190px; margin: 6px 0 11px; font-size: 11px; line-height: 1.6; color: #8A785B; word-break: keep-all; }
 .mate-entry b { font-size: 11px; color: #805A28; }
-.mate-entry-art { display: flex; align-items: flex-end; position: absolute; right: -7px; bottom: 5px; width: 185px; height: 130px; }
-.mate-entry-art .running-mate-avatar { width: 120px; }
-.mate-entry-art .running-mate-avatar + .running-mate-avatar { margin-left: -47px; transform: translateY(4px); }
+.mate-entry-art { display: flex; align-items: flex-end; width: 100%; }
+.mate-entry-art .running-mate-avatar { width: 50%; }
+.mate-entry-art .running-mate-avatar + .running-mate-avatar { margin-left: -25%; transform: translateY(4px); }
 @media (max-width: 380px) {
   .mate-stage { grid-template-columns: 120px minmax(0,1fr); gap: 3px; }
   .mate-stage-art > .running-mate-avatar { width: 152px; }
@@ -171,7 +171,6 @@
   .mate-bubble > p:not(.mate-sr-only) { font-size: 12px; }
   .mate-section-head > span { font-size: 10px; }
   .mate-chips button { font-size: 11px; }
-  .mate-entry-art { right: -25px; }
   .mate-entry strong { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) {

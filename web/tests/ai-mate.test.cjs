@@ -9,8 +9,8 @@ const profile = { id: 'runner-a', nickname: '러너', homeArea: '대구 수성�
 const run = (id, ago = 1, changes = {}) => ({ id, mode: 'LIVE', valid: true, status: 'FINISHED', startedAt: new Date(now - ago * day).toISOString(), finishedAt: new Date(now - ago * day + 1800000).toISOString(), distanceM: 5000, durationSec: 1800, avgPaceSec: 360, course: { name: '수성못 5K', slug: 'suseong' }, ...changes });
 const course = (slug, km, changes = {}) => ({ id: slug, slug, name: slug, distanceM: km * 1000, elevationGainM: 10, areaName: '대구 수성구', themes: ['수변'], isPublic: true, difficulty: '초급', ...changes });
 
-test('only the requested brown bear and squirrel are selectable', () => {
-  assert.deepEqual(MATES.map(m => m.id), ['bori', 'daram']); assert.equal(mateById('obsolete').id, 'bori');
+test('saved mate choices remain supported and unknown choices fall back', () => {
+  assert.deepEqual(MATES.map(m => m.id), ['bori', 'daram', 'kkubugi']); assert.equal(mateById('obsolete').id, 'bori');
 });
 test('exclude demo, invalid, incomplete, future, old, zero-distance and abandoned runs', () => {
   const a = analyzeMateRuns([run('ok'), run('demo', 1, { mode: 'DEMO' }), run('invalid', 1, { valid: false }), run('active', 1, { finishedAt: null }), run('future', -1), run('old', 29), run('zero', 1, { distanceM: 0 }), run('abandoned', 1, { status: 'ABANDONED' })], now);
