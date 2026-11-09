@@ -12,7 +12,7 @@ import type { Course, Weather } from '@/lib/types';
 
 type Panel = 'today' | 'pace' | 'chat';
 interface ChatMessage { id: number; role: 'user' | 'assistant'; text: string; mateId: MateId; source?: 'AI' | 'RULE' }
-interface LoadedData { profile: MateProfile; runs: MateRun[]; courses: Course[] }
+interface LoadedData { profile: MateProfile; runs: MateRun[]; courses: Course[]; aiEnabled: boolean }
 const PANELS: { id: Panel; label: string }[] = [{ id: 'today', label: '오늘의 러닝' }, { id: 'pace', label: '내 페이스' }, { id: 'chat', label: '메이트와 대화' }];
 const PROMPTS = ['내 페이스 분석해줘', '오늘 어디를 뛰면 좋을까?', '주간 리포트 보여줘', '응원 한마디 해줘'];
 const EFFORTS = [{ value: 'easy', label: '여유로웠어요' }, { value: 'right', label: '적당했어요' }, { value: 'hard', label: '힘들었어요' }] as const;
@@ -52,9 +52,9 @@ export default function AiMatePage() {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [me, runs, courses] = await Promise.all([api.get<{ user: MateProfile }>('/me'), api.get<{ items: MateRun[] }>('/me/runs'), api.get<{ items: Course[] }>('/courses')]);
+      const [me, runs, courses, mode] = await Promise.all([api.get<{ user: MateProfile }>('/me'), api.get<{ items: MateRun[] }>('/me/runs'), api.get<{ items: Course[] }>('/courses'), fetch('/api/mate-chat').then((response) => response.ok ? response.json() : null).catch(() => null)]);
       if (!me.user?.id || !Array.isArray(runs.items) || !Array.isArray(courses.items)) throw new Error('invalid response');
-      if (mounted.current) setData({ profile: me.user, runs: runs.items, courses: courses.items });
+      if (mounted.current) setData({ profile: me.user, runs: runs.items, courses: courses.items, aiEnabled: mode?.enabled === true });
     } catch { if (mounted.current) setError('러닝 기록과 코스를 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.'); }
     finally { if (mounted.current) setLoading(false); }
   }, []);
@@ -158,7 +158,7 @@ export default function AiMatePage() {
       </section>}
       {panel === 'chat' && <section id="mate-panel-chat" role="tabpanel" aria-labelledby="mate-tab-chat">
         <div className="mate-section-head"><h2>{mate.name}에게 물어보세요</h2><button type="button" className="mate-text-button" disabled={asking || !messages.length} onClick={() => { setMessages([]); setSpeech(''); setChatNotice(''); }}>대화 지우기</button></div>
-        <p className="mate-chat-explainer">{data.profile.isAuthenticated ? '질문과 러닝 요약을 AI가 참고해요. GPS 좌표와 계정 정보는 보내지 않아요.' : <>지금은 기록 기반 안내를 이용할 수 있어요. <Link href="/login">로그인</Link>하면 AI와 자유롭게 이야기해요.</>}</p>
+        <p className="mate-chat-explainer">{!data.aiEnabled ? '지금은 기록 기반 안내를 이용할 수 있어요. 생성형 AI 대화는 준비 중이에요.' : data.profile.isAuthenticated ? '질문과 러닝 요약을 AI가 참고해요. GPS 좌표와 계정 정보는 보내지 않아요.' : <>지금은 기록 기반 안내를 이용할 수 있어요. <Link href="/login">로그인</Link>하면 AI와 자유롭게 이야기해요.</>}</p>
         <div className="mate-quick-questions">{PROMPTS.map((prompt) => <button type="button" disabled={asking} key={prompt} onClick={() => void ask(prompt)}>{prompt} ↗</button>)}</div>
         <div className="mate-chat-log" role="log" aria-live="polite" aria-label="메이트와의 대화">{!messages.length && <div className="mate-chat-welcome"><MateAvatar mateId={mate.id} decorative/><p>작은 궁금증도 좋아요.<br/>{mate.name}{mate.id === 'bori' ? '이' : '가'} 같이 살펴볼게요.</p></div>}{messages.map((message) => <div key={message.id} className={`mate-chat-message ${message.role}`}>
           {message.role === 'assistant' && <MateAvatar mateId={message.mateId} decorative/>}<div>{message.role === 'assistant' && <span>{mateById(message.mateId).name} <small>{message.source === 'AI' ? 'AI 답변' : '기록 기반 안내'}</small></span>}<p>{message.text}</p></div></div>)}{asking && <div className="mate-thinking" role="status"><span/><span/><span/><p>{mate.name}{mate.id === 'bori' ? '이' : '가'} 생각하고 있어요</p></div>}<div ref={chatEnd}/></div>

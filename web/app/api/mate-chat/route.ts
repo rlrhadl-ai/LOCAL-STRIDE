@@ -27,6 +27,9 @@ function allowRequest(id: string) {
   return true;
 }
 const reply = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } });
+const aiEnabled = () => process.env.AI_MATE_ENABLED === 'true' && Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL || process.env.VERCEL_OIDC_TOKEN);
+
+export function GET() { return reply({ enabled: aiEnabled() }); }
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
@@ -61,9 +64,9 @@ export async function POST(request: NextRequest) {
     const analysis = analyzeMateRuns(runs.items);
     const plan = buildMatePlan(analysis, courses.items, input.preferences, me.user, area.name, input.feedback, weather);
     const answer = mateReply(input.question, input.preferences.mateId, analysis, plan);
+    if (!aiEnabled()) return reply({ answer, source: 'RULE', notice: '지금은 기록 기반 안내로 답하고 있어요. 생성형 AI 대화는 준비 중이에요.' });
     if (!me.user.isAuthenticated) return reply({ answer, source: 'RULE', notice: '로그인하면 AI와 자유롭게 대화할 수 있어요. 지금은 기록 기반 안내예요.' });
     if (!allowRequest(me.user.id)) return reply({ error: '잠시 쉬었다가 다시 물어봐 주세요.' }, 429);
-    if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL && !process.env.VERCEL_OIDC_TOKEN) return reply({ answer, source: 'RULE', notice: 'AI 연결을 준비 중이라 기록 기반 안내로 답하고 있어요.' });
     const mate = mateById(input.preferences.mateId);
     // Only summaries and public course facts enter the model context. No GPS tracks,
     // account identifiers, cookies, nickname, email, or exact activity timestamps.
