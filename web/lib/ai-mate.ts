@@ -2,8 +2,8 @@ import { daeguAreaFromCourse } from './daegu-areas';
 import type { Course, Weather } from './types';
 
 export const MATES = [
-  { id: 'bori', name: '보리', role: '차분한 페이스 코치', animal: '갈색 곰', color: '#805034', tint: '#F6EEE6', greeting: '우리에게 맞는 속도를 찾아봐요.', personality: '차분하고 간결하게 수치와 근거를 설명합니다. 기록의 한계를 인정하며 존댓말로 말합니다.', rate: .94, pitch: .95 },
-  { id: 'daram', name: '다람', role: '발랄한 동네 탐험가', animal: '다람쥐', color: '#AD5B25', tint: '#FFF2DE', greeting: '오늘도 한 걸음, 같이 가요!', personality: '호기심 많고 다정하게 작은 실천을 응원하는 동네 탐험가입니다. 제공된 코스와 장소를 근거로 경쟁이나 기록 압박 없이 밝은 존댓말로 말합니다.', rate: 1.04, pitch: 1.12 },
+  { id: 'bori', name: '재주곰', role: '차분한 페이스 코치', animal: '갈색 곰', color: '#805034', tint: '#F6EEE6', greeting: '우리에게 맞는 속도를 찾아봐요.', personality: '차분하고 간결하게 수치와 근거를 설명합니다. 기록의 한계를 인정하며 존댓말로 말합니다.', rate: .94, pitch: .95 },
+  { id: 'daram', name: '달람쥐', role: '발랄한 동네 탐험가', animal: '다람쥐', color: '#AD5B25', tint: '#FFF2DE', greeting: '오늘도 한 걸음, 같이 가요!', personality: '호기심 많고 다정하게 작은 실천을 응원하는 동네 탐험가입니다. 제공된 코스와 장소를 근거로 경쟁이나 기록 압박 없이 밝은 존댓말로 말합니다.', rate: 1.04, pitch: 1.12 },
 ] as const;
 export type MateId = typeof MATES[number]['id'];
 export type MateGoal = 'habit' | '5k' | '10k';
