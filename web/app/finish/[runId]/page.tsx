@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import RecordCard from '@/components/RecordCard';
+import MateBanner from '@/components/MateBanner';
 import AgentLog, { type LogEntry } from '@/components/AgentLog';
 import { api } from '@/lib/api';
 import { fmtTime, type FinishSummary } from '@/lib/types';
@@ -33,6 +34,7 @@ export default function FinishPage() {
         <div className="sub">{courseName}{sum.valid ? ' · 리워드가 지급되었습니다' : ` · ${sum.invalidReason ?? '검증 실패'} — 랭킹·메달에는 반영되지 않아요`}</div>
         <div className="frow"><div><b>{fmtTime(sum.durationSec)}</b><span>시간</span></div><div><b>{sum.pace}</b><span>페이스</span></div><div><b>{sum.checkins} / {sum.checkpoints}</b><span>체크인</span></div></div>
       </div>
+      <MateBanner finished />
       {sum.medal && (
         <div className="card medal-card" style={{ marginTop: 12 }}>
           <div className="medal">{sum.medal.name.split(' ').slice(0, 2).map((w, i) => <span key={i} style={{ display: 'block' }}>{w}</span>)}</div>

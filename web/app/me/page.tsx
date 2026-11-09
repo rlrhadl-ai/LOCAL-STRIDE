@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
+import MateBanner from '@/components/MateBanner';
 import { useDaeguArea } from '@/components/DaeguAreaProvider';
 import { api, mediaUrl } from '@/lib/api';
 import { DAEGU_AREA_OPTIONS } from '@/lib/daegu-areas';
@@ -119,6 +120,7 @@ export default function MePage() {
   return <main className="page me-page">
     <AppHeader title="마이 페이지" right={user.isAuthenticated ? <span className="account-status">로그인됨</span> : <Link className="header-login" href="/login">로그인</Link>} />
 
+    <MateBanner />
     <section className="profile profile-rich">
       <div className="who"><div className="avatar" style={{ background: user.avatarColor, color: '#fff' }}>{user.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt="" /> : user.nickname.slice(0, 1)}</div><div><div className="profile-name-row"><h3>{user.nickname}</h3>{user.role === 'ADMIN' && <span>ADMIN</span>}</div><div className="lv">{insight?.label || me.stats.levelName} · 내 활동 지역 {user.homeArea}</div></div></div>
       {user.bio && <p className="profile-bio">{user.bio}</p>}
